@@ -1,5 +1,6 @@
 /* IRI related functions.
-   Copyright (C) 2008-2011, 2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 2008, 2009, 2010, 2011, 2015 Free Software Foundation,
+   Inc.
 
 This file is part of GNU Wget.
 
@@ -32,22 +33,20 @@ as that of the covered work.  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <langinfo.h>
+#include <iconv.h>
+#include <stringprep.h>
+#include <idna.h>
+#include <idn-free.h>
 #include <errno.h>
-#ifdef HAVE_ICONV
-# include <iconv.h>
-#endif
-#include <idn2.h>
-#if IDN2_VERSION_NUMBER < 0x00140000
-# include <unicase.h>
-# include <unistr.h>
-#endif
 
 #include "utils.h"
 #include "url.h"
 #include "c-strcase.h"
 #include "c-strcasestr.h"
 #include "xstrndup.h"
+
+/* RFC3987 section 3.1 mandates STD3 ASCII RULES */
+#define IDNA_FLAGS  IDNA_USE_STD3_ASCII_RULES
 
 /* Note: locale encoding is kept in options struct (opt.locale) */
 
@@ -89,15 +88,10 @@ parse_charset (const char *str)
 }
 
 /* Find the locale used, or fall back on a default value */
-const char *
+char *
 find_locale (void)
 {
-	const char *encoding = nl_langinfo(CODESET);
-
-	if (!encoding || !*encoding)
-		return "ASCII";
-
-   return encoding;
+  return (char *) stringprep_locale_charset ();
 }
 
 /* Basic check of an encoding name. */
@@ -120,7 +114,6 @@ check_encoding_name (const char *encoding)
   return true;
 }
 
-#ifdef HAVE_ICONV
 /* Do the conversion according to the passed conversion descriptor cd. *out
    will contain the transcoded string on success. *out content is
    unspecified otherwise. */
@@ -153,7 +146,7 @@ do_conversion (const char *tocode, const char *fromcode, char const *in_org, siz
 
   for (;;)
     {
-      if (iconv (cd, (ICONV_CONST char **) &in, &inlen, out, &outlen) != (size_t)(-1) &&
+      if (iconv (cd, &in, &inlen, out, &outlen) != (size_t)(-1) &&
           iconv (cd, NULL, NULL, out, &outlen) != (size_t)(-1))
         {
           *out = s;
@@ -166,7 +159,7 @@ do_conversion (const char *tocode, const char *fromcode, char const *in_org, siz
             if (!strchr(in_org, '@') && !strchr(*out, '@'))
               debug_logprintf ("converted '%s' (%s) -> '%s' (%s)\n", in_org, fromcode, *out, tocode);
             else
-              debug_logprintf ("logging suppressed, strings may contain password\n");
+              debug_logprintf ("%s: logging suppressed, strings may contain password\n", __func__);
           }
           return true;
         }
@@ -208,19 +201,10 @@ do_conversion (const char *tocode, const char *fromcode, char const *in_org, siz
       if (!strchr(in_org, '@') && !strchr(*out, '@'))
         debug_logprintf ("converted '%s' (%s) -> '%s' (%s)\n", in_org, fromcode, *out, tocode);
       else
-        debug_logprintf ("logging suppressed, strings may contain password\n");
+        debug_logprintf ("%s: logging suppressed, strings may contain password\n", __func__);
     }
     return false;
 }
-#else
-static bool
-do_conversion (const char *tocode _GL_UNUSED, const char *fromcode _GL_UNUSED,
-               char const *in_org _GL_UNUSED, size_t inlen _GL_UNUSED, char **out)
-{
-  *out = NULL;
-  return false;
-}
-#endif
 
 /* Try converting string str from locale to UTF-8. Return a new string
    on success, or str on error or if conversion isn't needed. */
@@ -246,6 +230,50 @@ locale_to_utf8 (const char *str)
   return str;
 }
 
+/*
+ * Work around a libidn <= 1.30 vulnerability.
+ *
+ * The function checks for a valid UTF-8 character sequence before
+ * passing it to idna_to_ascii_8z().
+ *
+ * [1] http://lists.gnu.org/archive/html/help-libidn/2015-05/msg00002.html
+ * [2] https://lists.gnu.org/archive/html/bug-wget/2015-06/msg00002.html
+ * [3] http://curl.haxx.se/mail/lib-2015-06/0143.html
+ */
+static bool
+_utf8_is_valid(const char *utf8)
+{
+  const unsigned char *s = (const unsigned char *) utf8;
+
+  while (*s)
+    {
+      if ((*s & 0x80) == 0) /* 0xxxxxxx ASCII char */
+        s++;
+      else if ((*s & 0xE0) == 0xC0) /* 110xxxxx 10xxxxxx */
+        {
+          if ((s[1] & 0xC0) != 0x80)
+            return false;
+          s+=2;
+        }
+      else if ((*s & 0xF0) == 0xE0) /* 1110xxxx 10xxxxxx 10xxxxxx */
+        {
+          if ((s[1] & 0xC0) != 0x80 || (s[2] & 0xC0) != 0x80)
+            return false;
+          s+=3;
+        }
+      else if ((*s & 0xF8) == 0xF0) /* 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx */
+        {
+          if ((s[1] & 0xC0) != 0x80 || (s[2] & 0xC0) != 0x80 || (s[3] & 0xC0) != 0x80)
+            return false;
+          s+=4;
+        }
+      else
+        return false;
+    }
+
+  return true;
+}
+
 /* Try to "ASCII encode" UTF-8 host. Return the new domain on success or NULL
    on error. */
 char *
@@ -254,62 +282,34 @@ idn_encode (const struct iri *i, const char *host)
   int ret;
   char *ascii_encoded;
   char *utf8_encoded = NULL;
-  const char *src;
-#if IDN2_VERSION_NUMBER < 0x00140000
-  uint8_t *lower;
-  size_t len = 0;
-#endif
 
   /* Encode to UTF-8 if not done */
   if (!i->utf8_encode)
     {
       if (!remote_to_utf8 (i, host, &utf8_encoded))
-          return NULL;  /* Nothing to encode or an error occurred */
-      src = utf8_encoded;
+          return NULL;  /* Nothing to encode or an error occured */
     }
-  else
-    src = host;
 
-#if IDN2_VERSION_NUMBER >= 0x00140000
-  /* IDN2_TRANSITIONAL implies input NFC encoding */
-  ret = idn2_lookup_u8 ((uint8_t *) src, (uint8_t **) &ascii_encoded, IDN2_NONTRANSITIONAL);
-  if (ret != IDN2_OK)
-    /* fall back to TR46 Transitional mode, max IDNA2003 compatibility */
-    ret = idn2_lookup_u8 ((uint8_t *) src, (uint8_t **) &ascii_encoded, IDN2_TRANSITIONAL);
-
-  if (ret != IDN2_OK)
-    logprintf (LOG_VERBOSE, _("idn_encode failed (%d): %s\n"), ret,
-               quote (idn2_strerror (ret)));
-#else
-  /* we need a conversion to lowercase */
-  lower = u8_tolower ((uint8_t *) src, u8_strlen ((uint8_t *) src) + 1, 0, UNINORM_NFKC, NULL, &len);
-  if (!lower)
+  if (!_utf8_is_valid(utf8_encoded ? utf8_encoded : host))
     {
-      logprintf (LOG_VERBOSE, _("Failed to convert to lower: %d: %s\n"),
-                 errno, quote (src));
+      logprintf (LOG_VERBOSE, _("Invalid UTF-8 sequence: %s\n"),
+                 quote(utf8_encoded ? utf8_encoded : host));
       xfree (utf8_encoded);
       return NULL;
     }
 
-  if ((ret = idn2_lookup_u8 (lower, (uint8_t **) &ascii_encoded, IDN2_NFC_INPUT)) != IDN2_OK)
-    {
-      logprintf (LOG_VERBOSE, _("idn_encode failed (%d): %s\n"), ret,
-                 quote (idn2_strerror (ret)));
-    }
-
-  xfree (lower);
-#endif
-
+  /* Store in ascii_encoded the ASCII UTF-8 NULL terminated string */
+  ret = idna_to_ascii_8z (utf8_encoded ? utf8_encoded : host, &ascii_encoded, IDNA_FLAGS);
   xfree (utf8_encoded);
 
-  if (ret == IDN2_OK && ascii_encoded)
+  if (ret != IDNA_SUCCESS)
     {
-      char *tmp = xstrdup (ascii_encoded);
-      idn2_free (ascii_encoded);
-      ascii_encoded = tmp;
+      logprintf (LOG_VERBOSE, _("idn_encode failed (%d): %s\n"), ret,
+                 quote (idna_strerror (ret)));
+      return NULL;
     }
 
-  return ret == IDN2_OK ? ascii_encoded : NULL;
+  return ascii_encoded;
 }
 
 /* Try to decode an "ASCII encoded" host. Return the new domain in the locale
@@ -317,24 +317,18 @@ idn_encode (const struct iri *i, const char *host)
 char *
 idn_decode (const char *host)
 {
-/*
   char *new;
   int ret;
 
-  ret = idn2_register_u8 (NULL, host, (uint8_t **) &new, 0);
-  if (ret != IDN2_OK)
+  ret = idna_to_unicode_8zlz (host, &new, IDNA_FLAGS);
+  if (ret != IDNA_SUCCESS)
     {
-      logprintf (LOG_VERBOSE, _("idn2_register_u8 failed (%d): %s: %s\n"), ret,
-                 quote (idn2_strerror (ret)), host);
+      logprintf (LOG_VERBOSE, _("idn_decode failed (%d): %s\n"), ret,
+                 quote (idna_strerror (ret)));
       return NULL;
     }
 
   return new;
-*/
-  /* idn2_register_u8() just works label by label.
-   * That is pretty much overhead for just displaying the original ulabels.
-   * To keep at least the debug output format, return a cloned host. */
-  return xstrdup(host);
 }
 
 /* Try to transcode string str from remote encoding to UTF-8. On success, *new

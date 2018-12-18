@@ -1,5 +1,6 @@
 /* SSL support via OpenSSL library.
-   Copyright (C) 2000-2012, 2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,
+   2009, 2010, 2011, 2012, 2015 Free Software Foundation, Inc.
    Originally contributed by Christian Fraenkel.
 
 This file is part of GNU Wget.
@@ -173,16 +174,11 @@ ssl_init (void)
 {
   SSL_METHOD const *meth;
   long ssl_options = 0;
-#if !defined(LIBRESSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-  int ssl_proto_version = 0;
-#endif
 
 #if OPENSSL_VERSION_NUMBER >= 0x00907000
   if (ssl_true_initialized == 0)
     {
-#if OPENSSL_API_COMPAT < 0x10100000L
       OPENSSL_config (NULL);
-#endif
       ssl_true_initialized = 1;
     }
 #endif
@@ -206,26 +202,20 @@ ssl_init (void)
   CONF_modules_load_file(NULL, NULL,
       CONF_MFLAGS_DEFAULT_SECTION|CONF_MFLAGS_IGNORE_MISSING_FILE);
 #endif
-#if OPENSSL_API_COMPAT >= 0x10100000L
-  OPENSSL_init_ssl(0, NULL);
-#else
   SSL_library_init ();
   SSL_load_error_strings ();
-#endif
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
   SSLeay_add_all_algorithms ();
   SSLeay_add_ssl_algorithms ();
-#endif
 
   switch (opt.secure_protocol)
     {
-#if !defined OPENSSL_NO_SSL2 && OPENSSL_VERSION_NUMBER < 0x10100000L
+#ifndef OPENSSL_NO_SSL2
     case secure_protocol_sslv2:
       meth = SSLv2_client_method ();
       break;
 #endif
 
-#ifndef OPENSSL_NO_SSL3_METHOD
+#ifndef OPENSSL_NO_SSL3
     case secure_protocol_sslv3:
       meth = SSLv3_client_method ();
       break;
@@ -237,31 +227,16 @@ ssl_init (void)
       ssl_options |= SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
       break;
     case secure_protocol_tlsv1:
-#if !defined(LIBRESSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-      meth = TLS_client_method();
-      ssl_proto_version = TLS1_VERSION;
-#else
       meth = TLSv1_client_method ();
-#endif
       break;
 
 #if OPENSSL_VERSION_NUMBER >= 0x10001000
     case secure_protocol_tlsv1_1:
-#if !defined(LIBRESSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-      meth = TLS_client_method();
-      ssl_proto_version = TLS1_1_VERSION;
-#else
       meth = TLSv1_1_client_method ();
-#endif
       break;
 
     case secure_protocol_tlsv1_2:
-#if !defined(LIBRESSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-      meth = TLS_client_method();
-      ssl_proto_version = TLS1_2_VERSION;
-#else
       meth = TLSv1_2_client_method ();
-#endif
       break;
 #else
     case secure_protocol_tlsv1_1:
@@ -287,11 +262,6 @@ ssl_init (void)
 
   if (ssl_options)
     SSL_CTX_set_options (ssl_ctx, ssl_options);
-
-#if !defined(LIBRESSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-  if (ssl_proto_version)
-    SSL_CTX_set_min_proto_version(ssl_ctx, ssl_proto_version);
-#endif
 
   /* OpenSSL ciphers: https://www.openssl.org/docs/apps/ciphers.html
    * Since we want a good protection, we also use HIGH (that excludes MD4 ciphers and some more)
@@ -613,7 +583,7 @@ ssl_connect_wget (int fd, const char *hostname, int *continue_session)
     DEBUGP (("SSL handshake timed out.\n"));
     goto timeout;
   }
-  if (scwt_ctx.result <= 0 || !SSL_is_init_finished(conn))
+  if (scwt_ctx.result <= 0 || SSL_state(conn) != SSL_ST_OK)
     goto error;
 
   ctx = xnew0 (struct openssl_transport_context);

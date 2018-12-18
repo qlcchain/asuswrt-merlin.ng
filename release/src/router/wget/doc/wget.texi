@@ -31,8 +31,9 @@ This file documents the GNU Wget utility for downloading network
 data.
 
 @c man begin COPYRIGHT
-Copyright @copyright{} 1996-2011, 2015, 2018 Free Software Foundation,
-Inc.
+Copyright @copyright{} 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
+2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2015 Free Software
+Foundation, Inc.
 
 @iftex
 Permission is granted to make and distribute verbatim copies of
@@ -192,8 +193,6 @@ options, or via the initialization file @file{.wgetrc} (@pxref{Startup
 File}).  Wget allows you to define @dfn{global} startup files
 (@file{/usr/local/etc/wgetrc} by default) for site settings. You can also
 specify the location of a startup file with the --config option.
-To disable the reading of config files, use --no-config.
-If both --config and --no-config are given, --no-config is ignored.
  
 
 @ignore
@@ -513,27 +512,11 @@ href if none was specified.
 Downloads files covered in local Metalink @var{file}. Metalink version 3
 and 4 are supported.
 
-@cindex keep-badhash
-@item --keep-badhash
-Keeps downloaded Metalink's files with a bad hash. It appends .badhash
-to the name of Metalink's files which have a checksum mismatch, except
-without overwriting existing files.
-
 @cindex metalink-over-http
 @item --metalink-over-http
 Issues HTTP HEAD request instead of GET and extracts Metalink metadata
 from response headers. Then it switches to Metalink download.
 If no valid Metalink metadata is found, it falls back to ordinary HTTP download.
-Enables @samp{Content-Type: application/metalink4+xml} files download/processing.
-
-@cindex metalink-index
-@item --metalink-index=@var{number}
-Set the Metalink @samp{application/metalink4+xml} metaurl ordinal
-NUMBER. From 1 to the total number of ``application/metalink4+xml''
-available.  Specify 0 or @samp{inf} to choose the first good one.
-Metaurls, such as those from a @samp{--metalink-over-http}, may have
-been sorted by priority key's value; keep this in mind to choose the
-right NUMBER.
 
 @cindex preferred-location
 @item --preferred-location
@@ -567,10 +550,7 @@ would be resolved to @samp{http://foo/baz/b.html}.
 
 @cindex specify config 
 @item --config=@var{FILE}
-Specify the location of a startup file you wish to use instead of the
-default one(s). Use --no-config to disable reading of config files.
-If both --config and --no-config are given, --no-config is ignored.
-
+Specify the location of a startup file you wish to use.
 
 @item --rejected-log=@var{logfile}
 Logs all URL rejections to @var{logfile} as comma separated values.  The values
@@ -707,12 +687,6 @@ Before (over)writing a file, back up an existing file by adding a
 files are rotated to @samp{.2}, @samp{.3}, and so on, up to
 @var{backups} (and lost beyond that).
 
-@cindex authentication credentials
-@item --no-netrc
-Do not try to obtain credentials from @file{.netrc} file. By default
-@file{.netrc} file is searched for credentials in case none have been
-passed on command line and authentication is required.
-
 @cindex continue retrieval
 @cindex incomplete downloads
 @cindex resume download
@@ -828,7 +802,7 @@ With @samp{--progress=bar}, there are currently two possible parameters,
 @var{force} and @var{noscroll}.
 
 When the output is not a TTY, the progress bar always falls back to ``dot'',
-even if @samp{--progress=bar} was passed to Wget during invocation. This
+even if @samp{--progress=bar} was passed to Wget during invokation. This
 behaviour can be overridden and the ``bar'' output forced by using the ``force''
 parameter as @samp{--progress=bar:force}.
 
@@ -1180,15 +1154,6 @@ options for @sc{http} connections.
 Prompt for a password for each connection established. Cannot be specified
 when @samp{--password} is being used, because they are mutually exclusive.
 
-@item --use-askpass=@var{command}
-Prompt for a user and password using the specified command.  If no command is
-specified then the command in the environment variable WGET_ASKPASS is used.
-If WGET_ASKPASS is not set then the command in the environment variable
-SSH_ASKPASS is used.
-
-You can set the default command for use-askpass in the @file{.wgetrc}.  That
-setting may be overridden from the command line.
-
 @cindex iri support
 @cindex idn support
 @item --no-iri
@@ -1345,11 +1310,6 @@ renamed from @samp{--html-extension}, to better reflect its new
 behavior. The old option name is still acceptable, but should now be
 considered deprecated.
 
-As of version 1.19.2, Wget will also ensure that any downloaded files with
-a @code{Content-Encoding} of @samp{br}, @samp{compress}, @samp{deflate}
-or @samp{gzip} end in the suffix @samp{.br}, @samp{.Z}, @samp{.zlib}
-and @samp{.gz} respectively.
-
 At some point in the future, this option may well be expanded to
 include suffixes for other types of content, including content types
 that are not parsed by Wget.
@@ -1367,10 +1327,10 @@ the @code{digest}, or the Windows @code{NTLM} authentication scheme.
 Another way to specify username and password is in the @sc{url} itself
 (@pxref{URL Format}).  Either method reveals your password to anyone who
 bothers to run @code{ps}.  To prevent the passwords from being seen,
-use the @samp{--use-askpass} or store them in @file{.wgetrc} or @file{.netrc},
-and make sure to protect those files from other users with @code{chmod}.  If
-the passwords are really important, do not leave them lying in those files
-either---edit the files and delete them after Wget has started the download.
+store them in @file{.wgetrc} or @file{.netrc}, and make sure to protect
+those files from other users with @code{chmod}.  If the passwords are
+really important, do not leave them lying in those files either---edit
+the files and delete them after Wget has started the download.
 
 @iftex
 @xref{Security Considerations}, for more information about security
@@ -1533,23 +1493,6 @@ wget --header="Host: foo.bar" http://localhost/
 
 In versions of Wget prior to 1.10 such use of @samp{--header} caused
 sending of duplicate headers.
-
-@cindex Content-Encoding, choose
-@item --compression=@var{type}
-Choose the type of compression to be used.  Legal values are
-@samp{auto}, @samp{gzip} and @samp{none}.
-
-If @samp{auto} or @samp{gzip} are specified, Wget asks the server to
-compress the file using the gzip compression format. If the server
-compresses the file and responds with the @code{Content-Encoding}
-header field set appropriately, the file will be decompressed
-automatically.
-
-If @samp{none} is specified, wget will not ask the server to compress
-the file and will not decompress any server responses. This is the default.
-
-Compression support is currently experimental. In case it is turned on,
-please report any bugs to @code{bug-wget@@gnu.org}.
 
 @cindex redirect
 @item --max-redirect=@var{number}
@@ -1719,10 +1662,6 @@ This option is useful for some file-downloading CGI programs that use
 @code{Content-Disposition} headers to describe what the name of a
 downloaded file should be.
 
-When combined with @samp{--metalink-over-http} and @samp{--trust-server-names},
-a @samp{Content-Type: application/metalink4+xml} file is named using the
-@code{Content-Disposition} filename field, if available.
-
 @cindex Content On Error
 @item --content-on-error
 
@@ -1732,11 +1671,9 @@ with a http status code that indicates error.
 @cindex Trust server names
 @item --trust-server-names
 
-If this is set, on a redirect, the local file name will be based
-on the redirection URL.  By default the local file name is based on
-the original URL.  When doing recursive retrieving this can be helpful
-because in many web sites redirected URLs correspond to an underlying
-file structure, while link URLs do not.
+If this is set to on, on a redirect the last component of the
+redirection URL will be used as the local file name.  By default it is
+used the last component in the original URL.
 
 @cindex authentication
 @item --auth-no-challenge
@@ -1749,21 +1686,6 @@ Use of this option is not recommended, and is intended only to support
 some few obscure servers, which never send HTTP authentication
 challenges, but accept unsolicited auth info, say, in addition to
 form-based authentication.
-
-@item --retry-on-http-error=@var{code[,code,...]}
-Consider given HTTP response codes as non-fatal, transient errors.
-Supply a comma-separated list of 3-digit HTTP response codes as
-argument. Useful to work around special circumstances where retries
-are required, but the server responds with an error code normally not
-retried by Wget. Such errors might be 503 (Service Unavailable) and
-429 (Too Many Requests). Retries enabled by this option are performed
-subject to the normal retry timing and retry count limitations of
-Wget.
-
-Using this option is intended to support special use cases only and is
-generally not recommended, as it can force retries even in cases where
-the server is actually trying to decrease its load. Please use wisely
-and only if you know what you are doing.
 
 @end table
 
@@ -3277,8 +3199,8 @@ Turn on recognition of the (non-standard) @samp{Content-Disposition}
 HTTP header---if set to @samp{on}, the same as @samp{--content-disposition}.
 
 @item trust_server_names = on/off
-If set to on, construct the local file name from redirection URLs
-rather than original URLs.
+If set to on, use the last component of a redirection URL for the local
+file name.
 
 @item continue = on/off
 If set to on, force continuation of preexistent partially retrieved
@@ -3384,16 +3306,10 @@ Turn globbing on/off---the same as @samp{--glob} and @samp{--no-glob}.
 Define a header for HTTP downloads, like using
 @samp{--header=@var{string}}.
 
-@item compression = @var{string}
-Choose the compression type to be used.  Legal values are @samp{auto}
-(the default), @samp{gzip}, and @samp{none}.  The same as
-@samp{--compression=@var{string}}.
-
 @item adjust_extension = on/off
 Add a @samp{.html} extension to @samp{text/html} or
-@samp{application/xhtml+xml} files that lack one, a @samp{.css}
-extension to @samp{text/css} files that lack one, and a @samp{.br},
-@samp{.Z}, @samp{.zlib} or @samp{.gz} to compressed files like
+@samp{application/xhtml+xml} files that lack one, or a @samp{.css}
+extension to @samp{text/css} files that lack one, like
 @samp{-E}. Previously named @samp{html_extension} (still acceptable,
 but deprecated).
 
@@ -4304,7 +4220,7 @@ server.
 
 Until version 1.8, Wget supported the first version of the standard,
 written by Martijn Koster in 1994 and available at
-@url{http://www.robotstxt.org/orig.html}.  As of version 1.8,
+@url{http://www.robotstxt.org/robotstxt.html}.  As of version 1.8,
 Wget has supported the additional directives specified in the internet
 draft @samp{<draft-koster-robots-00.txt>} titled ``A Method for Web
 Robots Control''.  The draft, which has as far as I know never made to
@@ -4323,7 +4239,7 @@ this:
 @end example
 
 This is explained in some detail at
-@url{http://www.robotstxt.org/meta.html}.  Wget supports this
+@url{http://www.robotstxt.org/wc/meta-user.html}.  Wget supports this
 method of robot exclusion in addition to the usual @file{/robots.txt}
 exclusion.
 

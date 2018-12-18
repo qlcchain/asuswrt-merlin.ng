@@ -1,6 +1,6 @@
 # Makefile for `wget' utility
-# Copyright (C) 1995-1997, 2007-2011, 2015, 2018 Free Software
-# Foundation, Inc.
+# Copyright (C) 1995, 1996, 1997, 2007, 2008, 2009, 2010, 2011, 2015
+# Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -57,8 +57,10 @@ wget.pod: $(srcdir)/wget.texi version.texi
 	$(TEXI2POD) -D VERSION="$(VERSION)" $(srcdir)/wget.texi $@
 
 $(MAN): wget.pod
-	$(POD2MAN) --center="GNU Wget" --release="GNU Wget @VERSION@" --utf8 $? > $@ || \
-	$(POD2MAN) --center="GNU Wget" --release="GNU Wget @VERSION@" $? > $@
+	$(POD2MAN) --center="GNU Wget" --release="GNU Wget @VERSION@" --utf8 $? > $@; \
+	if [ $? != 0 ]; then \
+          $(POD2MAN) --center="GNU Wget" --release="GNU Wget @VERSION@" $? > $@; \
+	fi
 
 #wget.cat: $(MAN)
 #	nroff -man $? > $@

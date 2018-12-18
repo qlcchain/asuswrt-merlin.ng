@@ -90,7 +90,7 @@ class BaseTest:
             # ports and etc.
             # so we should record different domains respect to servers.
             domain = self.get_domain_addr(instance.server_address)
-            self.domains.append('localhost')
+            self.domains.append(domain[0])
             self.ports.append(domain[1])
 
     def exec_wget(self):
@@ -102,7 +102,7 @@ class BaseTest:
             time.sleep(float(os.getenv("SERVER_WAIT")))
 
         try:
-            ret_code = call(params, env={"HOME": os.getcwd()})
+            ret_code = call(params)
         except FileNotFoundError:
             raise TestFailed("The Wget Executable does not exist at the "
                              "expected path.")

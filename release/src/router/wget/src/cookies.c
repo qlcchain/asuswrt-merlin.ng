@@ -1,5 +1,6 @@
 /* Support for cookies.
-   Copyright (C) 2001-2011, 2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+   2010, 2011, 2015 Free Software Foundation, Inc.
 
 This file is part of GNU Wget.
 
@@ -44,7 +45,6 @@ as that of the covered work.  */
 
 #include "wget.h"
 
-#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -484,7 +484,7 @@ parse_set_cookie (const char *set_cookie, bool silent)
 /* Check whether ADDR matches <digits>.<digits>.<digits>.<digits>.
 
    We don't want to call network functions like inet_addr() because
-   all we need is a check, preferably one that is small, fast, and
+   all we need is a check, preferrably one that is small, fast, and
    well-defined.  */
 
 static bool
@@ -515,7 +515,7 @@ numeric_address_p (const char *addr)
    psl on our own, if libpsl is compiled without a public suffix list,
    fall back to using the original "tail matching" heuristic. Also if
    libpsl is unable to convert the domain to lowercase, which means that
-   it doesn't have any runtime conversion support, we again fall back to
+   it doesnt have any runtime conversion support, we again fall back to
    "tail matching" since libpsl states the results are unpredictable with
    upper case strings.
    */
@@ -525,51 +525,19 @@ check_domain_match (const char *cookie_domain, const char *host)
 {
 
 #ifdef HAVE_LIBPSL
-  static int init_psl;
-  static const psl_ctx_t *psl;
-
   char *cookie_domain_lower = NULL;
   char *host_lower = NULL;
+  const psl_ctx_t *psl;
   int is_acceptable;
 
-  DEBUGP (("cdm: 1\n"));
-  if (!init_psl)
+  DEBUGP (("cdm: 1"));
+  if (!(psl = psl_builtin()))
     {
-      init_psl = 1;
-
-#ifdef HAVE_PSL_LATEST
-      if ((psl = psl_latest (NULL)))
-        goto have_psl;
-
-      DEBUGP (("\nPSL: Failed to load any PSL data. "
-               "Falling back to insecure heuristics.\n"));
-#else
-      if ((psl = psl_builtin ()) && !psl_builtin_outdated ())
-        goto have_psl;
-
-      DEBUGP (("\nPSL: built-in data outdated. "
-               "Trying to load data from %s.\n",
-              quote (psl_builtin_filename ())));
-
-      if ((psl = psl_load_file (psl_builtin_filename ())))
-        goto have_psl;
-
-      DEBUGP (("\nPSL: %s not found or not readable. "
-               "Falling back to built-in data.\n",
-              quote (psl_builtin_filename ())));
-
-      if (!(psl = psl_builtin ()))
-        {
-          DEBUGP (("\nPSL: libpsl not built with a public suffix list. "
-                   "Falling back to insecure heuristics.\n"));
-          goto no_psl;
-        }
-#endif
+      DEBUGP (("\nlibpsl not built with a public suffix list. "
+               "Falling back to simple heuristics.\n"));
+      goto no_psl;
     }
-  else if (!psl)
-    goto no_psl;
 
-have_psl:
   if (psl_str_to_utf8lower (cookie_domain, NULL, NULL, &cookie_domain_lower) == PSL_SUCCESS &&
       psl_str_to_utf8lower (host, NULL, NULL, &host_lower) == PSL_SUCCESS)
     {
@@ -594,13 +562,13 @@ no_psl:
 #endif
 
   /* For efficiency make some elementary checks first */
-  DEBUGP (("cdm: 2\n"));
+  DEBUGP (("cdm: 2"));
 
   /* For the sake of efficiency, check for exact match first. */
   if (0 == strcasecmp (cookie_domain, host))
     return true;
 
-  DEBUGP (("cdm: 3\n"));
+  DEBUGP ((" 3"));
 
   /* HOST must match the tail of cookie_domain. */
   if (!match_tail (host, cookie_domain, true))
@@ -640,7 +608,7 @@ no_psl:
     if (*p == '.')
       /* Ignore leading period in this calculation. */
       ++p;
-    DEBUGP (("cdm: 4\n"));
+    DEBUGP ((" 4"));
     for (out = 0; !out; p++)
       switch (*p)
         {
@@ -666,12 +634,12 @@ no_psl:
           ++ldcl;
         }
 
-    DEBUGP (("cdm: 5\n"));
+    DEBUGP ((" 5"));
 
     if (dccount < 2)
       return false;
 
-    DEBUGP (("cdm: 6\n"));
+    DEBUGP ((" 6"));
 
     if (dccount == 2)
       {
@@ -691,7 +659,7 @@ no_psl:
       }
   }
 
-  DEBUGP (("cdm: 7\n"));
+  DEBUGP ((" 7"));
 
   /* Don't allow the host "foobar.com" to set a cookie for domain
      "bar.com".  */
@@ -706,7 +674,7 @@ no_psl:
         return false;
     }
 
-  DEBUGP (("cdm: 8\n"));
+  DEBUGP ((" 8"));
 
   return true;
 }
@@ -1050,7 +1018,7 @@ cookie_header (struct cookie_jar *jar, const char *host,
 
   struct cookie *cookie;
   struct weighed_cookie *outgoing;
-  size_t count, i, ocnt;
+  int count, i, ocnt;
   char *result;
   int result_size, pos;
   PREPEND_SLASH (path);         /* see cookie_handle_set_cookie */
@@ -1064,7 +1032,7 @@ cookie_header (struct cookie_jar *jar, const char *host,
   chain_count = find_chains_of_host (jar, host, chains);
 
   /* No cookies for this host. */
-  if (chain_count <= 0)
+  if (!chain_count)
     return NULL;
 
   cookies_now = time (NULL);
@@ -1075,7 +1043,7 @@ cookie_header (struct cookie_jar *jar, const char *host,
 
   /* Count the number of matching cookies. */
   count = 0;
-  for (i = 0; i < (unsigned) chain_count; i++)
+  for (i = 0; i < chain_count; i++)
     for (cookie = chains[i]; cookie; cookie = cookie->next)
       if (cookie_matches_url (cookie, host, port, path, secflag, NULL))
         ++count;
@@ -1083,14 +1051,12 @@ cookie_header (struct cookie_jar *jar, const char *host,
     return NULL;                /* no cookies matched */
 
   /* Allocate the array. */
-  if (count > SIZE_MAX / sizeof (struct weighed_cookie))
-    return NULL;                /* unable to process so many cookies */
-  outgoing = xmalloc (count * sizeof (struct weighed_cookie));
+  outgoing = alloca_array (struct weighed_cookie, count);
 
   /* Fill the array with all the matching cookies from the chains that
      match HOST. */
   ocnt = 0;
-  for (i = 0; i < (unsigned) chain_count; i++)
+  for (i = 0; i < chain_count; i++)
     for (cookie = chains[i]; cookie; cookie = cookie->next)
       {
         int pg;
@@ -1145,7 +1111,6 @@ cookie_header (struct cookie_jar *jar, const char *host,
         }
     }
   result[pos++] = '\0';
-  xfree (outgoing);
   assert (pos == result_size);
   return result;
 }

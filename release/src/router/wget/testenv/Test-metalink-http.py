@@ -2,6 +2,7 @@
 from sys import exit
 from test.http_test import HTTPTest
 from misc.wget_file import WgetFile
+import re
 import hashlib
 from base64 import b64encode
 
@@ -11,9 +12,9 @@ from base64 import b64encode
 
 # Helper function for hostname, port and digest substitution
 def SubstituteServerInfo (text, host, port, digest):
-    text = text.replace('{{FILE1_HASH}}', digest)
-    text = text.replace('{{SRV_HOST}}', host)
-    text = text.replace('{{SRV_PORT}}', str (port))
+    text = re.sub (r'{{FILE1_HASH}}', digest, text)
+    text = re.sub (r'{{SRV_HOST}}', host, text)
+    text = re.sub (r'{{SRV_PORT}}', str (port), text)
     return text
 
 ############# File Definitions ###############################################

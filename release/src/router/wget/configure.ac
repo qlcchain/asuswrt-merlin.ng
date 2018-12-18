@@ -1,6 +1,6 @@
 dnl Template file for GNU Autoconf
-dnl Copyright (C) 1995-1997, 2001, 2007-2014, 2018 Free Software
-dnl Foundation, Inc.
+dnl Copyright (C) 1995, 1996, 1997, 2001, 2007, 2008, 2009, 2010, 2011, 2012,
+dnl 2013, 2014 Free Software Foundation, Inc.
 
 dnl This program is free software; you can redistribute it and/or modify
 dnl it under the terms of the GNU General Public License as published by
@@ -290,6 +290,15 @@ AC_DEFINE([HAVE_STRNCASECMP], 1, [Define to 1 if you have the `strncasecmp' func
 AC_DEFINE([HAVE_STRDUP], 1, [Define to 1 if you have the `strdup' function.])
 AC_DEFINE([HAVE_ISATTY], 1, [Define to 1 if you have the `isatty' function.])
 
+dnl
+dnl Call Wget-specific macros defined in aclocal.
+dnl
+WGET_STRUCT_UTIMBUF
+WGET_FNMATCH
+WGET_NANOSLEEP
+WGET_POSIX_CLOCK
+WGET_NSL_SOCKET
+
 dnl Deal with specific hosts
 case $host_os in
   *mingw32* )
@@ -318,10 +327,6 @@ AS_IF([test "x$with_libpsl" != xno], [
       [with_libpsl=yes; AC_DEFINE([HAVE_LIBPSL], [1], [PSL support enabled])],
       [with_libpsl=no;  AC_MSG_WARN(*** libpsl was not found. Fallback to builtin cookie checking.)])
   ])
-])
-
-AS_IF([test x"$with_libpsl" = xyes], [
-  AC_CHECK_FUNCS(psl_latest)
 ])
 
 AS_IF([test x"$with_zlib" != xno], [
@@ -630,6 +635,9 @@ AC_ARG_ENABLE(iri,
   ]
 )
 
+AC_ARG_WITH(libidn, AC_HELP_STRING([--with-libidn=[DIR]],
+                                   [Support IDN/IRIs (needs GNU Libidn)]),
+                                   libidn=$withval, libidn="")
 AS_IF([test "X$iri" != "Xno"],[
   AM_ICONV
 
@@ -641,23 +649,39 @@ AS_IF([test "X$iri" != "Xno"],[
       AC_MSG_NOTICE([disabling IRIs because libiconv wasn't found])
     fi
   fi
+],[  # else
+  # For some reason, this seems to be set even when we don't check.
+  # Explicitly unset.
+  LIBICONV=
 ])
 
-AC_ARG_WITH(libidn, AC_HELP_STRING([--with-libidn=[DIR]],
-                                   [Support IDN2008/IRIs (needs GNU libidn2 + libunicode)]),
-                                   libidn=$withval, libidn="")
 if test "X$iri" != "Xno"; then
-  AS_IF([test "x$with_libidn2" != xno], [
-    AC_SEARCH_LIBS(idn2_lookup_u8, idn2,
-      [with_libidn2=yes; AC_DEFINE([ENABLE_IRI], 1, [Define if IRI support is enabled.])],
-      [with_libidn2=no; iri=no; AC_MSG_WARN(*** LIBIDN2 was not found. You will not be able to use IDN2008 support)])
+  if test "$libidn" != ""; then
+    LDFLAGS="${LDFLAGS} -L$libidn/lib"
+    CPPFLAGS="${CPPFLAGS} -I$libidn/include"
+  fi
 
-#    AS_IF([test "x$with_libidn2" = xyes], [
-#      AC_SEARCH_LIBS(u8_tolower, unistring,
-#        [AC_DEFINE([ENABLE_IRI], 1, [Define if IRI support is enabled.])],
-#        [iri=no; AC_MSG_WARN(*** LIBUNISTRING was not found. You will not be able to use IDN2008 support)])
-#    ])
-  ])
+  # If idna.h can't be found, check to see if it was installed under
+  # /usr/include/idn (OpenSolaris, at least, places it there).
+  # Check for idn-int.h in that case, because idna.h won't find
+  # idn-int.h until we've decided to add -I/usr/include/idn.
+  AC_CHECK_HEADER(idna.h, ,
+    [AC_CHECK_HEADER(idn/idn-int.h,
+                    [CPPFLAGS="${CPPFLAGS} -I/usr/include/idn"],
+                    [iri=no])]
+  )
+
+  if test "X$iri" != "Xno"; then
+    AC_CHECK_LIB(idn, stringprep_check_version,
+      [iri=yes LIBS="${LIBS} -lidn"], iri=no)
+  fi
+
+  if test "X$iri" != "Xno" ; then
+    AC_DEFINE([ENABLE_IRI], 1, [Define if IRI support is enabled.])
+    AC_MSG_NOTICE([Enabling support for IRI.])
+  else
+    AC_MSG_WARN([Libidn not found])
+  fi
 fi
 
 dnl
@@ -726,7 +750,7 @@ dnl
 dnl Check for libcares (resolver library)
 dnl
 
-AS_IF([test "X$with_cares" = "Xyes"],[
+AS_IF([test "X$with_cares" == "Xyes"],[
   PKG_CHECK_MODULES([CARES], libcares, [
     CFLAGS="$CARES_CFLAGS $CFLAGS"
     AC_CHECK_HEADER(ares.h, [
@@ -747,45 +771,18 @@ AS_IF([test "X$with_cares" = "Xyes"],[
   RESOLVER_INFO="libc, --bind-dns-address and --dns-servers not available"
 ])
 
-dnl
-dnl Extended Attribute support
-dnl
-
-AC_ARG_ENABLE([xattr],
-  [AS_HELP_STRING([--disable-xattr], [disable support for POSIX Extended Attributes])],
-  [ENABLE_XATTR=$enableval],
-  [ENABLE_XATTR=yes])
-
-case "$host_os" in
-  *linux* | *darwin*) xattr_syscalls="fsetxattr" ;;
-  freebsd*)           xattr_syscalls="extattr_set_fd" ;;
-  *)  AC_MSG_NOTICE([Disabling Extended Attribute support: your system is not known to support extended attributes.])
-      ENABLE_XATTR=no
-esac
-
-if test "X${ENABLE_XATTR}" = "Xyes"; then
-  AC_CHECK_FUNCS([$xattr_syscalls], [], [
-    AC_MSG_NOTICE([Disabling Extended Attribute support: your system does not support $xattr_syscalls])
-    ENABLE_XATTR=no
-  ])
-fi
-
-test "X${ENABLE_XATTR}" = "Xyes" && AC_DEFINE([ENABLE_XATTR], 1,
-    [Define if you want file meta-data storing into POSIX Extended Attributes compiled in.])
 
 dnl Needed by src/Makefile.am
 AM_CONDITIONAL([IRI_IS_ENABLED], [test "X$iri" != "Xno"])
 AM_CONDITIONAL([WITH_SSL], [test "X$with_ssl" != "Xno"])
 AM_CONDITIONAL([METALINK_IS_ENABLED], [test "X$with_metalink" != "Xno"])
-AM_CONDITIONAL([WITH_XATTR], [test "X$ENABLE_XATTR" != "Xno"])
 
 dnl
 dnl Create output
 dnl
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile util/Makefile
                  po/Makefile.in tests/Makefile
-                 lib/Makefile testenv/Makefile
-                 tests/certs/interca.conf tests/certs/rootca.conf])
+                 lib/Makefile testenv/Makefile])
 AC_CONFIG_HEADERS([src/config.h])
 AC_OUTPUT
 
@@ -804,12 +801,10 @@ AC_MSG_NOTICE([Summary of build options:
   Digest:            $ENABLE_DIGEST
   NTLM:              $ENABLE_NTLM
   OPIE:              $ENABLE_OPIE
-  POSIX xattr:       $ENABLE_XATTR
   Debugging:         $ENABLE_DEBUG
   Assertions:        $ENABLE_ASSERTION
   Valgrind:          $VALGRIND_INFO
   Metalink:          $with_metalink
   Resolver:          $RESOLVER_INFO
   GPGME:             $have_gpg
-  IRI:               $iri
 ])

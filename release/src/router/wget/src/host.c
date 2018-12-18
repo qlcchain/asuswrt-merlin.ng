@@ -1,5 +1,7 @@
 /* Host name resolution and matching.
-   Copyright (C) 1996-2012, 2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
+   2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2015 Free Software
+   Foundation, Inc.
 
 This file is part of GNU Wget.
 
@@ -54,6 +56,10 @@ as that of the covered work.  */
 #endif /* WINDOWS */
 
 #include <errno.h>
+
+#ifdef ENABLE_IRI
+#include <idn-free.h>
+#endif
 
 #include "utils.h"
 #include "host.h"
@@ -422,12 +428,14 @@ getaddrinfo_with_timeout (const char *node, const char *service,
 const char *
 print_address (const ip_address *addr)
 {
+#ifdef ENABLE_IPV6
   static char buf[64];
-
   if (!inet_ntop (addr->family, IP_INADDR_DATA (addr), buf, sizeof buf))
     snprintf (buf, sizeof buf, "<error: %s>", strerror (errno));
-
   return buf;
+#else
+  return inet_ntoa (addr->data.d4);
+#endif
 }
 
 /* The following two functions were adapted from glibc's
@@ -840,8 +848,11 @@ lookup_host (const char *host, int flags)
 
       if (opt.enable_iri && (name = idn_decode ((char *) host)) != NULL)
         {
-          str = aprintf ("%s (%s)", name, host);
-          xfree (name);
+          int len = strlen (host) + strlen (name) + 4;
+          str = xmalloc (len);
+          snprintf (str, len, "%s (%s)", name, host);
+          str[len-1] = '\0';
+          idn_free (name);
         }
 
       logprintf (LOG_VERBOSE, _("Resolving %s... "),
@@ -1017,25 +1028,18 @@ sufmatch (const char **list, const char *what)
   int i, j, k, lw;
 
   lw = strlen (what);
-
   for (i = 0; list[i]; i++)
     {
-      j = strlen (list[i]);
-      if (lw < j)
-        continue; /* what is no (sub)domain of list[i] */
+      if (list[i][0] == '\0')
+        continue;
 
-      for (k = lw; j >= 0 && k >= 0; j--, k--)
+      for (j = strlen (list[i]), k = lw; j >= 0 && k >= 0; j--, k--)
         if (c_tolower (list[i][j]) != c_tolower (what[k]))
           break;
-
-      /* Domain or subdomain match
-       * k == -1: exact match
-       * k >= 0 && what[k] == '.': subdomain match
-       */
-      if (j == -1 && (k == -1 || what[k] == '.'))
+      /* The domain must be first to reach to beginning.  */
+      if (j == -1)
         return true;
     }
-
   return false;
 }
 

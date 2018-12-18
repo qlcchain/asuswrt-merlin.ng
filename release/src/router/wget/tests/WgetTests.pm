@@ -13,7 +13,7 @@ use IO::Handle;
 use POSIX qw(locale_h);
 use locale;
 
-our $WGETPATH = '../src/wget -d --no-config';
+our $WGETPATH = '../src/wget';
 our $VALGRIND_SUPP_FILE = Cwd::getcwd();
 if (defined $ENV{'srcdir'}) {
     $VALGRIND_SUPP_FILE = $VALGRIND_SUPP_FILE
@@ -152,7 +152,7 @@ sub run
     $errcode >>= 8;    # XXX: should handle abnormal error codes.
 
     # Shutdown server
-    # if we didn't explicitly kill the server, we would have to call
+    # if we didn't explicitely kill the server, we would have to call
     # waitpid ($pid, 0) here in order to wait for the child process to
     # terminate
     kill 'TERM', $pid;
@@ -359,9 +359,8 @@ sub _verify_download
               );
     if (@unexpected_downloads)
     {
-        return 'Test failed: unexpected downloaded files [' .
-          (join ', ', @unexpected_downloads) . "]\n";
-
+        return 'Test failed: unexpected downloaded files [' . join ', ',
+          @unexpected_downloads . "]\n";
     }
 
     return q{};

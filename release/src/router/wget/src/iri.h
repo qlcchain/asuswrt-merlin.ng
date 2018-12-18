@@ -1,5 +1,6 @@
 /* Internationalization related declarations.
-   Copyright (C) 2008-2011, 2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 2008, 2009, 2010, 2011, 2015 Free Software Foundation,
+   Inc.
 
 This file is part of GNU Wget.
 
@@ -39,8 +40,11 @@ struct iri {
 
 #ifdef ENABLE_IRI
 
+# include <idna.h>
+# include <idn-free.h>
+
 char *parse_charset (const char *str);
-const char *find_locale (void);
+char *find_locale (void);
 bool check_encoding_name (const char *encoding);
 const char *locale_to_utf8 (const char *str);
 char *idn_encode (const struct iri *i, const char *host);
@@ -62,7 +66,7 @@ extern struct iri dummy_iri;
 #define locale_to_utf8(str)         (str)
 #define idn_encode(a,b)             NULL
 #define idn_decode(str)             NULL
-#define idn2_free(str)              ((void)0)
+#define idn_free(str)               ((void)0)
 #define remote_to_utf8(a,b,c)       false
 #define iri_new()                   (&dummy_iri)
 #define iri_dup(a)                  (&dummy_iri)

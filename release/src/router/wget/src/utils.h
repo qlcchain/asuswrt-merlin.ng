@@ -1,5 +1,7 @@
 /* Declarations for utils.c.
-   Copyright (C) 1996-2011, 2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
+   2005, 2006, 2007, 2008, 2009, 2010, 2011, 2015 Free Software
+   Foundation, Inc.
 
 This file is part of GNU Wget.
 
@@ -76,23 +78,15 @@ void fork_to_background (void);
 char *aprintf (const char *, ...) GCC_FORMAT_ATTR (1, 2);
 char *concat_strings (const char *, ...);
 
-typedef struct file_stat_s {
-  int access_err;               /* Error in accecssing file : Not present vs permission */
-  ino_t st_ino;                 /* st_ino from stats() on the file before open() */
-  dev_t st_dev;                 /* st_dev from stats() on the file before open() */
-} file_stats_t;
-
 void touch (const char *, time_t);
 int remove_link (const char *);
-bool file_exists_p (const char *, file_stats_t *);
+bool file_exists_p (const char *);
 bool file_non_directory_p (const char *);
 wgint file_size (const char *);
 int make_directory (const char *);
 char *unique_name (const char *, bool);
 FILE *unique_create (const char *, bool, char **);
 FILE *fopen_excl (const char *, int);
-FILE *fopen_stat (const char *, const char *, file_stats_t *);
-int   open_stat  (const char *, int, mode_t, file_stats_t *);
 char *file_merge (const char *, const char *);
 
 int fnmatch_nocase (const char *, const char *, int);
@@ -146,8 +140,8 @@ void xsleep (double);
 /* How many bytes it will take to store LEN bytes in base64.  */
 #define BASE64_LENGTH(len) (4 * (((len) + 2) / 3))
 
-size_t wget_base64_encode (const void *, size_t, char *);
-ssize_t wget_base64_decode (const char *, void *, size_t);
+size_t base64_encode (const void *, size_t, char *);
+ssize_t base64_decode (const char *, void *);
 
 #ifdef HAVE_LIBPCRE
 void *compile_pcre_regex (const char *);

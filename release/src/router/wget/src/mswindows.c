@@ -1,6 +1,7 @@
 /* mswindows.c -- Windows-specific support
-   Copyright (C) 1996-2011, 2014-2015, 2018 Free Software Foundation,
-   Inc.
+   Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
+   2005, 2006, 2007, 2008, 2009, 2010, 2011, 2014, 2015 Free Software
+   Foundation, Inc.
 
 This file is part of GNU Wget.
 
@@ -52,6 +53,9 @@ as that of the covered work.  */
 #endif
 
 
+/* Defined in log.c.  */
+void log_request_redirect_output (const char *);
+
 /* Windows version of xsleep in utils.c.  */
 
 void
@@ -94,7 +98,7 @@ static void
 ws_hangup (const char *reason)
 {
   fprintf (stderr, _("Continuing in background.\n"));
-  redirect_output (true, reason);
+  log_request_redirect_output (reason);
 
   /* Detach process from the current console.  Under Windows 9x, if we
      were launched from a 16-bit process (which is usually the case;
@@ -579,7 +583,7 @@ run_with_timeout (double seconds, void (*fun) (void *), void *arg)
 const char *
 inet_ntop (int af, const void *src, char *dst, socklen_t cnt)
 {
-  /* struct sockaddr can't accommodate struct sockaddr_in6. */
+  /* struct sockaddr can't accomodate struct sockaddr_in6. */
   union {
     struct sockaddr_in6 sin6;
     struct sockaddr_in sin;

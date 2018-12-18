@@ -1,5 +1,5 @@
 /* Substitute for <sys/select.h>.
-   Copyright (C) 2007-2018 Free Software Foundation, Inc.
+   Copyright (C) 2007-2015 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, see <https://www.gnu.org/licenses/>.  */
+   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
 
 # if __GNUC__ >= 3
 @PRAGMA_SYSTEM_HEADER@
@@ -81,9 +81,8 @@
    of 'struct timeval', and no definition of this type.
    Also, Mac OS X, AIX, HP-UX, IRIX, Solaris, Interix declare select()
    in <sys/time.h>.
-   But avoid namespace pollution on glibc systems and "unknown type
-   name" problems on Cygwin.  */
-# if !(defined __GLIBC__ || defined __CYGWIN__)
+   But avoid namespace pollution on glibc systems.  */
+# ifndef __GLIBC__
 #  include <sys/time.h>
 # endif
 
@@ -101,11 +100,10 @@
 #endif
 
 /* Get definition of 'sigset_t'.
-   But avoid namespace pollution on glibc systems and "unknown type
-   name" problems on Cygwin.
+   But avoid namespace pollution on glibc systems.
    Do this after the include_next (for the sake of OpenBSD 5.0) but before
    the split double-inclusion guard (for the sake of Solaris).  */
-#if !((defined __GLIBC__ || defined __CYGWIN__) && !defined __UCLIBC__)
+#if !(defined __GLIBC__ && !defined __UCLIBC__)
 # include <signal.h>
 #endif
 
@@ -291,15 +289,12 @@ _GL_WARN_ON_USE (pselect, "pselect is not portable - "
 #   define select rpl_select
 #  endif
 _GL_FUNCDECL_RPL (select, int,
-                  (int, fd_set *restrict, fd_set *restrict, fd_set *restrict,
-                   struct timeval *restrict));
+                  (int, fd_set *, fd_set *, fd_set *, struct timeval *));
 _GL_CXXALIAS_RPL (select, int,
-                  (int, fd_set *restrict, fd_set *restrict, fd_set *restrict,
-                   struct timeval *restrict));
+                  (int, fd_set *, fd_set *, fd_set *, struct timeval *));
 # else
 _GL_CXXALIAS_SYS (select, int,
-                  (int, fd_set *restrict, fd_set *restrict, fd_set *restrict,
-                   struct timeval *restrict));
+                  (int, fd_set *, fd_set *, fd_set *, struct timeval *));
 # endif
 _GL_CXXALIASWARN (select);
 #elif @HAVE_WINSOCK2_H@

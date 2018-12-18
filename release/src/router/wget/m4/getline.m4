@@ -1,6 +1,6 @@
-# getline.m4 serial 28
+# getline.m4 serial 26
 
-dnl Copyright (C) 1998-2003, 2005-2007, 2009-2018 Free Software Foundation,
+dnl Copyright (C) 1998-2003, 2005-2007, 2009-2015 Free Software Foundation,
 dnl Inc.
 dnl
 dnl This file is free software; the Free Software Foundation
@@ -46,8 +46,7 @@ AC_DEFUN([gl_FUNC_GETLINE],
         size_t siz = 0;
         int len = getline (&line, &siz, in);
         if (!(len == 4 && line && strcmp (line, "foo\n") == 0))
-          { free (line); fclose (in); return 2; }
-        free (line);
+          return 2;
       }
       {
         /* Test result for a NULL buffer and a non-zero size.
@@ -55,10 +54,8 @@ AC_DEFUN([gl_FUNC_GETLINE],
         char *line = NULL;
         size_t siz = (size_t)(~0) / 4;
         if (getline (&line, &siz, in) == -1)
-          { fclose (in); return 3; }
-        free (line);
+          return 3;
       }
-      fclose (in);
       return 0;
     }
     ]])], [am_cv_func_working_getline=yes] dnl The library version works.

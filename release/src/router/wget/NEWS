@@ -1,109 +1,11 @@
 GNU Wget NEWS -- history of user-visible changes.
 
-Copyright (C) 1997-2018 Free Software Foundation, Inc.
+Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
+2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015 Free
+Software Foundation, Inc.
 See the end for copying conditions.
 
 Please send GNU Wget bug reports to <bug-wget@gnu.org>.
-
-* Changes in Wget 1.19.4
-
-* A major bug that caused GZip'ed pages to never be decompressed has been fixed
-
-* Support for Content-Encoding and Transfer-Encoding have been marked as
-  experimental and disabled by default
-
-
-* Changes in Wget 1.19.3
-
-* Prevent erroneous decompression of .gz and .tgz files with broken servers
-
-* Added support for HTTP 308 Permanent Redirect response
-
-* Fix a segfault in some cases where the Content-Type header is not sent
-
-* Support OpenSSL 1.1 builds without using deprecated features
-
-* Fix netrc file detection on Windows
-
-* Several minor bug fixes
-
-
-* Changes in Wget 1.19.2
-
-* Fix CVE-2017-13089 (Stack overflow in HTTP protocol handling)
-
-* Fix CVE-2017-13090 (Heap overflow in HTTP protocol handling)
-
-* New option --compression for gzip Content-Encoding
-
-* New option --[no]-netrc to control .netrc parsing
-
-* Added GNU extensions to .netrc parsing
-
-* Improved IDNA 2003 compatibility
-
-* Fix VPATH issues
-
-* Improved and extended the test suite
-
-* Support Wayback Machine's X-Archive-Orig-last-modified
-
-* Several bug fixes
-
-
-* Changes in Wget 1.19.1
-
-* Fix bugs, a regression, portability/build issues
-
-* Add new option --retry-on-http-error
-
-
-* Changes in Wget 1.19
-
-* New option --use-askpass=COMMAND. Fetch user/password by calling
-  an external program.
-
-* Use IDNA2008 (+ TR46 if available) through libidn2
-
-* When processing a Metalink header, --metalink-index=<number> allows
-  to process the header's application/metalink4+xml files.
-
-* When processing a Metalink file, --trust-server-names enables the
-  use of the destination file names specified in the Metalink file,
-  otherwise a safe destination file name is computed.
-
-* When processing a Metalink file, enforce a safe destination path.
-  Remove any drive letter prefix under w32, i.e. 'C:D:file'.  Call
-  libmetalink's metalink_check_safe_path() to prevent absolute,
-  relative, or home paths:
-  https://tools.ietf.org/html/rfc5854#section-4.1.2.1
-  https://tools.ietf.org/html/rfc5854#section-4.2.8.3
-
-* When processing a Metalink file, --directory-prefix=<prefix> sets
-  the top of the retrieval tree to prefix for Metalink downloads.
-
-* When processing a Metalink file, reject downloaded files which don't
-  agree with their own metalink:size value:
-  https://tools.ietf.org/html/rfc5854#section-4.2.16
-
-* When processing a Metalink file, with --continue resume partially
-  downloaded files and keep fully downloaded files even if they fail
-  the verification.
-
-* When processing a Metalink file, create the parent directories of a
-  "path/file" destination file name:
-  https://tools.ietf.org/html/rfc5854#section-4.1.2.1
-  https://tools.ietf.org/html/rfc5854#section-4.2.8.3
-
-* On a recursive download, append a .tmp suffix to temporary files
-  that will be deleted after being parsed, and create them
-  readable/writable only by the owner.
-
-* New make target 'check-valgrind'
-
-* Fix several bugs
-
-* Fix compatibility issues
 
 * Changes in Wget 1.18
 
@@ -744,7 +646,7 @@ addresses when accessing the first one fails.
 non-standard port.
 
 ** Wget now supports the robots.txt directives specified in
-<http://www.robotstxt.org/norobots-rfc.txt>.
+<http://www.robotstxt.org/wc/norobots-rfc.txt>.
 
 ** URL parser has been fixed, especially the infamous overzealous
 quoting.  Wget no longer dequotes reserved characters, e.g. `%3F' is

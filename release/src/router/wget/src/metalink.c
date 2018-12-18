@@ -1,5 +1,5 @@
 /* Metalink module.
-   Copyright (C) 2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 2015 Free Software Foundation, Inc.
 
 This file is part of GNU Wget.
 
@@ -34,16 +34,8 @@ as that of the covered work.  */
 #include "retr.h"
 #include "exits.h"
 #include "utils.h"
-#include "md2.h"
-#include "md4.h"
-#include "md5.h"
-#include "sha1.h"
 #include "sha256.h"
-#include "sha512.h"
-#include "dosname.h"
-#include "xmemdup0.h"
 #include "xstrndup.h"
-#include "c-strcase.h"
 #include <errno.h>
 #include <unistd.h> /* For unlink.  */
 #include <metalink/metalink_parser.h>
@@ -70,16 +62,7 @@ retrieve_from_metalink (const metalink_t* metalink)
   bool _output_stream_regular = output_stream_regular;
   char *_output_document = opt.output_document;
 
-  /* metalink file counter */
-  unsigned mfc = 0;
-
-  /* metalink retrieval type */
-  const char *metatpy = metalink->origin ? "Metalink/HTTP" : "Metalink/XML";
-
-  /* metalink mother source */
-  char *metasrc = metalink->origin ? metalink->origin : opt.input_metalink;
-
-  DEBUGP (("Retrieving from Metalink %s\n", quote (metasrc)));
+  DEBUGP (("Retrieving from Metalink\n"));
 
   /* No files to download.  */
   if (!metalink->files)
@@ -97,13 +80,7 @@ retrieve_from_metalink (const metalink_t* metalink)
     {
       metalink_file_t *mfile = *mfile_ptr;
       metalink_resource_t **mres_ptr;
-      char *planname = NULL;
-      char *trsrname = NULL;
       char *filename = NULL;
-      char *basename = NULL;
-      char *safename = NULL;
-      char *destname = NULL;
-      bool size_ok = false;
       bool hash_ok = false;
 
       uerr_t retr_err = METALINK_MISSING_RESOURCE;
@@ -113,272 +90,18 @@ retrieve_from_metalink (const metalink_t* metalink)
          1 -> verified successfully  */
       char sig_status = 0;
 
-      bool skip_mfile = false;
-
       output_stream = NULL;
 
-      mfc++;
-
-      /* The directory prefix for opt.metalink_over_http is handled by
-         src/url.c (url_file_name), do not add it a second time.  */
-      if (!metalink->origin && opt.dir_prefix && strlen (opt.dir_prefix))
-        planname = aprintf ("%s/%s", opt.dir_prefix, mfile->name);
-      else
-        planname = xstrdup (mfile->name);
-
-      /* With Metalink/HTTP, trust the metalink file name (from cli).
-         With --trust-server-names, trust the Metalink/XML file name,
-         otherwise, use the basename of --input-metalink followed by
-         the metalink file counter as suffix.  */
-      if (metalink->origin || opt.trustservernames)
-        {
-          trsrname = xstrdup (mfile->name);
-        }
-      else
-        {
-          trsrname = xstrdup (get_metalink_basename (opt.input_metalink));
-          append_suffix_number (&trsrname, ".#", mfc);
-        }
-
-      /* Add the directory prefix for opt.input_metalink.  */
-      if (!metalink->origin && opt.dir_prefix && strlen (opt.dir_prefix))
-        filename = aprintf ("%s/%s", opt.dir_prefix, trsrname);
-      else
-        filename = xstrdup (trsrname);
-
-      /* Enforce libmetalink's metalink_check_safe_path().  */
-      basename = get_metalink_basename (filename);
-      safename = metalink_check_safe_path (filename) ? filename : basename;
-
       DEBUGP (("Processing metalink file %s...\n", quote (mfile->name)));
-      DEBUGP (("\n"));
-      DEBUGP (("  %s\n", metatpy));
-      DEBUGP (("\n"));
-      DEBUGP (("  --trust-server-names   %s\n", opt.trustservernames ? "true" : "false"));
-      DEBUGP (("  --directory-prefix     %s\n", quote (opt.dir_prefix ? opt.dir_prefix : "")));
-      DEBUGP (("\n"));
-      DEBUGP (("   Counted metalink file %u\n", mfc));
-      DEBUGP (("   Planned metalink file %s\n", quote (planname ? planname : "")));
-      DEBUGP (("   Trusted metalink file %s\n", quote (trsrname ? trsrname : "")));
-      DEBUGP (("   Current metalink file %s\n", quote (filename ? filename : "")));
-      DEBUGP (("   Cleaned metalink file %s\n", quote (basename ? basename : "")));
-      DEBUGP (("   Secured metalink file %s\n", quote (safename ? safename : "")));
-      DEBUGP (("\n"));
-
-      /* Verify if the planned metalink file name is safe.  */
-      if (!safename || strcmp (planname, safename))
-        {
-          logprintf (LOG_NOTQUIET,
-                     _("[--trust-server-names %s, --directory-prefix=%s]\n"),
-                     (opt.trustservernames ? "true" : "false"),
-                     quote (opt.dir_prefix ? opt.dir_prefix : ""));
-          logprintf (LOG_NOTQUIET,
-                     _("Planned metalink file: %s\n"),
-                     quote (planname ? planname : ""));
-          logprintf (LOG_NOTQUIET,
-                     _("Secured metalink file: %s\n"),
-                     quote (safename ? safename : ""));
-          if (!safename)
-            {
-              logprintf (LOG_NOTQUIET,
-                         _("Rejecting metalink file. Unsafe name.\n"));
-              xfree (planname);
-              xfree (trsrname);
-              xfree (filename);
-              continue;
-            }
-        }
-
-      /* Process the chosen application/metalink4+xml metaurl.  */
-      if (opt.metalink_index >= 0)
-        {
-          int _metalink_index = opt.metalink_index;
-
-          metalink_metaurl_t **murl_ptr;
-          int abs_count = 0, meta_count = 0;
-
-          uerr_t x_retr_err = METALINK_MISSING_RESOURCE;
-
-          opt.metalink_index = -1;
-
-          DEBUGP (("Searching application/metalink4+xml ordinal number %d...\n", _metalink_index));
-
-          if (mfile->metaurls && mfile->metaurls[0])
-            for (murl_ptr = mfile->metaurls; *murl_ptr; murl_ptr++)
-              {
-                metalink_t* metaurl_xml;
-                metalink_error_t meta_err;
-                metalink_metaurl_t *murl = *murl_ptr;
-
-                char *_dir_prefix = opt.dir_prefix;
-                char *_input_metalink = opt.input_metalink;
-
-                char *metafile = NULL;
-                char *metadest = NULL;
-                char *metadir = NULL;
-
-                abs_count++;
-
-                if (strcmp (murl->mediatype, "application/metalink4+xml"))
-                  continue;
-
-                meta_count++;
-
-                DEBUGP (("  Ordinal number %d: %s\n", meta_count, quote (murl->url)));
-
-                if (_metalink_index > 0)
-                  {
-                    if (meta_count < _metalink_index)
-                      continue;
-                    else if (meta_count > _metalink_index)
-                      break;
-                  }
-
-                logprintf (LOG_NOTQUIET,
-                           _("Processing metaurl %s...\n"), quote (murl->url));
-
-                /* Metalink/XML download file name.  */
-                metafile = xstrdup (safename);
-
-                if (opt.trustservernames)
-                  replace_metalink_basename (&metafile, murl->name ? murl->name : murl->url);
-                else
-                  append_suffix_number (&metafile, ".meta#", meta_count);
-
-                if (!metalink_check_safe_path (metafile))
-                  {
-                    logprintf (LOG_NOTQUIET,
-                               _("Rejecting metaurl file %s. Unsafe name.\n"),
-                               quote (metafile));
-                    xfree (metafile);
-                    if (_metalink_index > 0)
-                      break;
-                    continue;
-                  }
-
-                /* For security reasons, always save metalink metaurl
-                   files as new unique files. Keep them on failure.  */
-                x_retr_err = fetch_metalink_file (murl->url, false, false,
-                                                  metafile, &metadest);
-
-                /* On failure, try the next metalink metaurl.  */
-                if (x_retr_err != RETROK)
-                  {
-                    logprintf (LOG_VERBOSE,
-                               _("Failed to download %s. Skipping metaurl.\n"),
-                               quote (metadest ? metadest : metafile));
-                    inform_exit_status (x_retr_err);
-                    xfree (metadest);
-                    xfree (metafile);
-                    if (_metalink_index > 0)
-                      break;
-                    continue;
-                  }
-
-                /* Parse Metalink/XML.  */
-                meta_err = metalink_parse_file (metadest, &metaurl_xml);
-
-                /* On failure, try the next metalink metaurl.  */
-                if (meta_err)
-                  {
-                    logprintf (LOG_NOTQUIET,
-                               _("Unable to parse metaurl file %s.\n"), quote (metadest));
-                    x_retr_err = METALINK_PARSE_ERROR;
-                    inform_exit_status (x_retr_err);
-                    xfree (metadest);
-                    xfree (metafile);
-                    if (_metalink_index > 0)
-                      break;
-                    continue;
-                  }
-
-                /* We need to sort the resources if preferred location
-                   was specified by the user.  */
-                if (opt.preferred_location && opt.preferred_location[0])
-                  {
-                    metalink_file_t **x_mfile_ptr;
-                    for (x_mfile_ptr = metaurl_xml->files; *x_mfile_ptr; x_mfile_ptr++)
-                      {
-                        metalink_resource_t **x_mres_ptr;
-                        metalink_file_t *x_mfile = *x_mfile_ptr;
-                        size_t mres_count = 0;
-
-                        for (x_mres_ptr = x_mfile->resources; *x_mres_ptr; x_mres_ptr++)
-                          mres_count++;
-
-                        stable_sort (x_mfile->resources,
-                                     mres_count,
-                                     sizeof (metalink_resource_t *),
-                                     metalink_res_cmp);
-                      }
-                  }
-
-                /* Insert the current "Directory Options".  */
-                if (metalink->origin)
-                  {
-                    /* WARNING: Do not use lib/dirname.c (dir_name) to
-                       get the directory name, it may append a dot '.'
-                       character to the directory name. */
-                    metadir = xstrdup (planname);
-                    replace_metalink_basename (&metadir, NULL);
-                  }
-                else
-                  {
-                    metadir = xstrdup (opt.dir_prefix);
-                  }
-
-                opt.dir_prefix = metadir;
-                opt.input_metalink = metadest;
-
-                x_retr_err = retrieve_from_metalink (metaurl_xml);
-
-                if (x_retr_err != RETROK)
-                  logprintf (LOG_NOTQUIET,
-                             _("Could not download all resources from %s.\n"),
-                             quote (metadest));
-
-                metalink_delete (metaurl_xml);
-                metaurl_xml = NULL;
-
-                opt.input_metalink = _input_metalink;
-                opt.dir_prefix = _dir_prefix;
-
-                xfree (metadir);
-                xfree (metadest);
-                xfree (metafile);
-
-                break;
-              }
-
-          if (x_retr_err != RETROK)
-            logprintf (LOG_NOTQUIET, _("Metaurls processing returned with error.\n"));
-
-          xfree (destname);
-          xfree (filename);
-          xfree (trsrname);
-          xfree (planname);
-
-          opt.output_document = _output_document;
-          output_stream_regular = _output_stream_regular;
-          output_stream = _output_stream;
-
-          opt.metalink_index = _metalink_index;
-
-          return x_retr_err;
-        }
 
       /* Resources are sorted by priority.  */
-      for (mres_ptr = mfile->resources;
-           *mres_ptr && mfile->checksums && !skip_mfile; mres_ptr++)
+      for (mres_ptr = mfile->resources; *mres_ptr; mres_ptr++)
         {
           metalink_resource_t *mres = *mres_ptr;
           metalink_checksum_t **mchksum_ptr, *mchksum;
           struct iri *iri;
           struct url *url;
-          file_stats_t flstats;
           int url_err;
-
-          clean_metalink_string (&mres->url);
 
           if (!RES_TYPE_SUPPORTED (mres->type))
             {
@@ -388,29 +111,18 @@ retrieve_from_metalink (const metalink_t* metalink)
               continue;
             }
 
-          /* The file is fully downloaded, but some problems were
-             encountered (checksum failure?).  The loop had been
-             continued to switch to the next url.  */
-          if (output_stream && retr_err == RETROK)
-            {
-              /* Do not rename/remove a continued file. Skip it.  */
-              if (opt.always_rest)
-                {
-                  skip_mfile = true;
-                  continue;
-                }
+          retr_err = METALINK_RETR_ERROR;
 
+          /* If output_stream is not NULL, then we have failed on
+             previous resource and are retrying. Thus, remove the file.  */
+          if (output_stream)
+            {
               fclose (output_stream);
               output_stream = NULL;
-              badhash_or_remove (destname);
-              xfree (destname);
+              if (unlink (filename))
+                logprintf (LOG_NOTQUIET, "unlink: %s\n", strerror (errno));
+              xfree (filename);
             }
-          else if (!output_stream && destname)
-            {
-              xfree (destname);
-            }
-
-          retr_err = METALINK_RETR_ERROR;
 
           /* Parse our resource URL.  */
           iri = iri_new ();
@@ -431,69 +143,22 @@ retrieve_from_metalink (const metalink_t* metalink)
               /* Avoid recursive Metalink from HTTP headers.  */
               bool _metalink_http = opt.metalink_over_http;
 
-              /* If output_stream is not NULL, then we have failed on
-                 previous resource and are retrying. Thus, continue
-                 with the next resource.  Do not close output_stream
-                 while iterating over the resources, or the download
-                 progress will be lost.  */
-              if (output_stream)
-                {
-                  DEBUGP (("Previous resource failed, continue with next resource.\n"));
-                }
-              else
-                {
-                  /* Assure proper local file name regardless of the URL
-                     of particular Metalink resource.
-                     To do that we create the local file here and put
-                     it as output_stream. We restore the original configuration
-                     after we are finished with the file.  */
-                  if (opt.always_rest)
-                    /* continue previous download */
-                    output_stream = fopen (safename, "ab");
-                  else
-                    /* create a file with an unique name */
-                    output_stream = unique_create (safename, true, &destname);
-                }
-
+              /* Assure proper local file name regardless of the URL
+                 of particular Metalink resource.
+                 To do that we create the local file here and put
+                 it as output_stream. We restore the original configuration
+                 after we are finished with the file.  */
+              output_stream = unique_create (mfile->name, true, &filename);
               output_stream_regular = true;
 
-              /*
-                At this point, if output_stream is NULL, the file
-                couldn't be created/opened.
-
-                This happens when the metalink:file has a "path/file"
-                name format and its directory tree cannot be created:
-                * stdio.h (fopen)
-                * src/utils.c (unique_create)
-
-                RFC5854 requires a proper "path/file" format handling,
-                this can be achieved setting opt.output_document while
-                output_stream is left to NULL:
-                * src/http.c (open_output_stream): If output_stream is
-                  NULL, create the opt.output_document "path/file"
-              */
-              if (!destname)
-                destname = xstrdup (safename);
-
-              /* Store the real file name for displaying in messages,
-                 and for proper RFC5854 "path/file" handling.  */
-              opt.output_document = destname;
+              /* Store the real file name for displaying in messages.  */
+              opt.output_document = filename;
 
               opt.metalink_over_http = false;
-              DEBUGP (("Storing to %s\n", destname));
+              DEBUGP (("Storing to %s\n", filename));
               retr_err = retrieve_url (url, mres->url, NULL, NULL,
                                        NULL, NULL, opt.recursive, iri, false);
               opt.metalink_over_http = _metalink_http;
-
-              /*
-                Bug: output_stream is NULL, but retrieve_url() somehow
-                created destname.
-
-                Bugfix: point output_stream to destname if it exists.
-              */
-              memset(&flstats, 0, sizeof(flstats));
-              if (!output_stream && file_exists_p (destname, &flstats))
-                output_stream = fopen_stat (destname, "ab", &flstats);
             }
           url_free (url);
           iri_free (iri);
@@ -503,94 +168,23 @@ retrieve_from_metalink (const metalink_t* metalink)
               FILE *local_file;
 
               /* Check the digest.  */
-              local_file = fopen (destname, "rb");
+              local_file = fopen (filename, "rb");
               if (!local_file)
                 {
                   logprintf (LOG_NOTQUIET, _("Could not open downloaded file.\n"));
                   continue;
                 }
 
-              size_ok = false;
-              logprintf (LOG_VERBOSE, _("Computing size for %s\n"), quote (destname));
-
-              if (!mfile->size)
-                {
-                  size_ok = true;
-                  logprintf (LOG_VERBOSE, _("File size not declared. Skipping check.\n"));
-                }
-              else
-                {
-                  wgint local_file_size = file_size (destname);
-
-                  if (local_file_size == -1)
-                    {
-                      logprintf (LOG_NOTQUIET, _("Could not get downloaded file's size.\n"));
-                      fclose (local_file);
-                      local_file = NULL;
-                      continue;
-                    }
-
-                  /* FIXME: what about int64?  */
-                  DEBUGP (("Declared size: %lld\n", mfile->size));
-                  DEBUGP (("Computed size: %lld\n", (long long) local_file_size));
-
-                  if (local_file_size != (wgint) mfile->size)
-                    {
-                      logprintf (LOG_NOTQUIET, _("Size mismatch for file %s.\n"), quote (destname));
-                      fclose (local_file);
-                      local_file = NULL;
-                      continue;
-                    }
-                  else
-                    {
-                      size_ok = true;
-                      logputs (LOG_VERBOSE, _("Size matches.\n"));
-                    }
-                }
-
               for (mchksum_ptr = mfile->checksums; *mchksum_ptr; mchksum_ptr++)
                 {
-                  char md2[MD2_DIGEST_SIZE];
-                  char md2_txt[2 * MD2_DIGEST_SIZE + 1];
-
-                  char md4[MD4_DIGEST_SIZE];
-                  char md4_txt[2 * MD4_DIGEST_SIZE + 1];
-
-                  char md5[MD5_DIGEST_SIZE];
-                  char md5_txt[2 * MD5_DIGEST_SIZE + 1];
-
-                  char sha1[SHA1_DIGEST_SIZE];
-                  char sha1_txt[2 * SHA1_DIGEST_SIZE + 1];
-
-                  char sha224[SHA224_DIGEST_SIZE];
-                  char sha224_txt[2 * SHA224_DIGEST_SIZE + 1];
-
                   char sha256[SHA256_DIGEST_SIZE];
                   char sha256_txt[2 * SHA256_DIGEST_SIZE + 1];
 
-                  char sha384[SHA384_DIGEST_SIZE];
-                  char sha384_txt[2 * SHA384_DIGEST_SIZE + 1];
-
-                  char sha512[SHA512_DIGEST_SIZE];
-                  char sha512_txt[2 * SHA512_DIGEST_SIZE + 1];
-
-                  hash_ok = false;
                   mchksum = *mchksum_ptr;
 
                   /* I have seen both variants...  */
-                  if (c_strcasecmp (mchksum->type, "md2")
-                      && c_strcasecmp (mchksum->type, "md4")
-                      && c_strcasecmp (mchksum->type, "md5")
-                      && c_strcasecmp (mchksum->type, "sha1")
-                      && c_strcasecmp (mchksum->type, "sha-1")
-                      && c_strcasecmp (mchksum->type, "sha224")
-                      && c_strcasecmp (mchksum->type, "sha-224")
-                      && c_strcasecmp (mchksum->type, "sha256")
-                      && c_strcasecmp (mchksum->type, "sha-256")
-                      && c_strcasecmp (mchksum->type, "sha384")
-                      && c_strcasecmp (mchksum->type, "sha-384")
-                      && c_strcasecmp (mchksum->type, "sha512")
-                      && c_strcasecmp (mchksum->type, "sha-512"))
+                  if (strcasecmp (mchksum->type, "sha256")
+                      && strcasecmp (mchksum->type, "sha-256"))
                     {
                       DEBUGP (("Ignoring unsupported checksum type %s.\n",
                                quote (mchksum->type)));
@@ -598,90 +192,24 @@ retrieve_from_metalink (const metalink_t* metalink)
                     }
 
                   logprintf (LOG_VERBOSE, _("Computing checksum for %s\n"),
-                             quote (destname));
+                             quote (mfile->name));
 
+                  sha256_stream (local_file, sha256);
+                  wg_hex_to_string (sha256_txt, sha256, SHA256_DIGEST_SIZE);
                   DEBUGP (("Declared hash: %s\n", mchksum->hash));
-
-                  if (c_strcasecmp (mchksum->type, "md2") == 0)
-                    {
-                      md2_stream (local_file, md2);
-                      wg_hex_to_string (md2_txt, md2, MD2_DIGEST_SIZE);
-                      DEBUGP (("Computed hash: %s\n", md2_txt));
-                      if (!strcmp (md2_txt, mchksum->hash))
-                        hash_ok = true;
-                    }
-                  else if (c_strcasecmp (mchksum->type, "md4") == 0)
-                    {
-                      md4_stream (local_file, md4);
-                      wg_hex_to_string (md4_txt, md4, MD4_DIGEST_SIZE);
-                      DEBUGP (("Computed hash: %s\n", md4_txt));
-                      if (!strcmp (md4_txt, mchksum->hash))
-                        hash_ok = true;
-                    }
-                  else if (c_strcasecmp (mchksum->type, "md5") == 0)
-                    {
-                      md5_stream (local_file, md5);
-                      wg_hex_to_string (md5_txt, md5, MD5_DIGEST_SIZE);
-                      DEBUGP (("Computed hash: %s\n", md5_txt));
-                      if (!strcmp (md5_txt, mchksum->hash))
-                        hash_ok = true;
-                    }
-                  else if (c_strcasecmp (mchksum->type, "sha1") == 0
-                           || c_strcasecmp (mchksum->type, "sha-1") == 0)
-                    {
-                      sha1_stream (local_file, sha1);
-                      wg_hex_to_string (sha1_txt, sha1, SHA1_DIGEST_SIZE);
-                      DEBUGP (("Computed hash: %s\n", sha1_txt));
-                      if (!strcmp (sha1_txt, mchksum->hash))
-                        hash_ok = true;
-                    }
-                  else if (c_strcasecmp (mchksum->type, "sha224") == 0
-                           || c_strcasecmp (mchksum->type, "sha-224") == 0)
-                    {
-                      sha224_stream (local_file, sha224);
-                      wg_hex_to_string (sha224_txt, sha224, SHA224_DIGEST_SIZE);
-                      DEBUGP (("Computed hash: %s\n", sha224_txt));
-                      if (!strcmp (sha224_txt, mchksum->hash))
-                        hash_ok = true;
-                    }
-                  else if (c_strcasecmp (mchksum->type, "sha256") == 0
-                           || c_strcasecmp (mchksum->type, "sha-256") == 0)
-                    {
-                      sha256_stream (local_file, sha256);
-                      wg_hex_to_string (sha256_txt, sha256, SHA256_DIGEST_SIZE);
-                      DEBUGP (("Computed hash: %s\n", sha256_txt));
-                      if (!strcmp (sha256_txt, mchksum->hash))
-                        hash_ok = true;
-                    }
-                  else if (c_strcasecmp (mchksum->type, "sha384") == 0
-                           || c_strcasecmp (mchksum->type, "sha-384") == 0)
-                    {
-                      sha384_stream (local_file, sha384);
-                      wg_hex_to_string (sha384_txt, sha384, SHA384_DIGEST_SIZE);
-                      DEBUGP (("Computed hash: %s\n", sha384_txt));
-                      if (!strcmp (sha384_txt, mchksum->hash))
-                        hash_ok = true;
-                    }
-                  else if (c_strcasecmp (mchksum->type, "sha512") == 0
-                           || c_strcasecmp (mchksum->type, "sha-512") == 0)
-                    {
-                      sha512_stream (local_file, sha512);
-                      wg_hex_to_string (sha512_txt, sha512, SHA512_DIGEST_SIZE);
-                      DEBUGP (("Computed hash: %s\n", sha512_txt));
-                      if (!strcmp (sha512_txt, mchksum->hash))
-                        hash_ok = true;
-                    }
-
-                  if (hash_ok)
+                  DEBUGP (("Computed hash: %s\n", sha256_txt));
+                  if (!strcmp (sha256_txt, mchksum->hash))
                     {
                       logputs (LOG_VERBOSE,
                                _("Checksum matches.\n"));
+                      hash_ok = true;
                     }
                   else
                     {
                       logprintf (LOG_NOTQUIET,
                                  _("Checksum mismatch for file %s.\n"),
-                                 quote (destname));
+                                 quote (mfile->name));
+                      hash_ok = false;
                     }
 
                   /* Stop as soon as we checked the supported checksum.  */
@@ -698,7 +226,7 @@ retrieve_from_metalink (const metalink_t* metalink)
 #ifdef HAVE_GPGME
               /* Check the crypto signature.
 
-                 Note that the signatures from Metalink in XML will not be
+                 Note that the signtures from Metalink in XML will not be
                  parsed when using libmetalink version older than 0.1.3.
                  Metalink-over-HTTP is not affected by this problem.  */
               if (mfile->signature)
@@ -716,7 +244,7 @@ retrieve_from_metalink (const metalink_t* metalink)
                   gpgme_check_version (NULL);
 
                   /* Open data file.  */
-                  fd = open (destname, O_RDONLY);
+                  fd = open (filename, O_RDONLY);
                   if (fd == -1)
                     {
                       logputs (LOG_NOTQUIET,
@@ -820,7 +348,7 @@ retrieve_from_metalink (const metalink_t* metalink)
                           & (GPGME_SIGSUM_VALID | GPGME_SIGSUM_GREEN))
                         {
                           logputs (LOG_VERBOSE,
-                                   _("Signature validation succeeded.\n"));
+                                   _("Signature validation suceeded.\n"));
                           sig_status = 1;
                           break;
                         }
@@ -862,30 +390,17 @@ gpg_skip_verification:
             } /* endif RETR_OK.  */
         } /* Iterate over resources.  */
 
-      if (!mfile->checksums)
-        {
-          logprintf (LOG_NOTQUIET, _("No checksums found.\n"));
-          retr_err = METALINK_CHKSUM_ERROR;
-        }
-
       if (retr_err != RETROK)
         {
           logprintf (LOG_VERBOSE, _("Failed to download %s. Skipping resource.\n"),
-                     quote (destname ? destname : safename));
-        }
-      else if (!size_ok)
-        {
-          retr_err = METALINK_SIZE_ERROR;
-          logprintf (LOG_NOTQUIET,
-                     _("File %s retrieved but size does not match. "
-                       "\n"), quote (destname));
+                     quote (mfile->name));
         }
       else if (!hash_ok)
         {
           retr_err = METALINK_CHKSUM_ERROR;
           logprintf (LOG_NOTQUIET,
                      _("File %s retrieved but checksum does not match. "
-                       "\n"), quote (destname));
+                       "\n"), quote (mfile->name));
         }
 #ifdef HAVE_GPGME
         /* Signature will be only validated if hash check was successful.  */
@@ -894,28 +409,27 @@ gpg_skip_verification:
           retr_err = METALINK_SIG_ERROR;
           logprintf (LOG_NOTQUIET,
                      _("File %s retrieved but signature does not match. "
-                       "\n"), quote (destname));
+                       "\n"), quote (mfile->name));
         }
 #endif
       last_retr_err = retr_err == RETROK ? last_retr_err : retr_err;
 
-      /* Rename the file if error encountered; remove if option specified.
+      /* Remove the file if error encountered or if option specified.
          Note: the file has been downloaded using *_loop. Therefore, it
          is not necessary to keep the file for continuated download.  */
-      if (((retr_err != RETROK && !opt.always_rest) || opt.delete_after)
-           && destname != NULL && file_exists_p (destname, NULL))
+      if ((retr_err != RETROK || opt.delete_after)
+           && filename != NULL && file_exists_p (filename))
         {
-          badhash_or_remove (destname);
+          logprintf (LOG_VERBOSE, _("Removing %s.\n"), quote (filename));
+          if (unlink (filename))
+            logprintf (LOG_NOTQUIET, "unlink: %s\n", strerror (errno));
         }
       if (output_stream)
         {
           fclose (output_stream);
           output_stream = NULL;
         }
-      xfree (destname);
       xfree (filename);
-      xfree (trsrname);
-      xfree (planname);
     } /* Iterate over files.  */
 
   /* Restore original values.  */
@@ -924,328 +438,6 @@ gpg_skip_verification:
   output_stream = _output_stream;
 
   return last_retr_err;
-}
-
-/*
-  Replace/remove the basename of a file name.
-
-  The file name is permanently modified.
-
-  Always set NAME to a string, even an empty one.
-
-  Use REF's basename as replacement.  If REF is NULL or if it doesn't
-  provide a valid basename candidate, then remove NAME's basename.
-*/
-void
-replace_metalink_basename (char **name, char *ref)
-{
-  int n;
-  char *p, *new, *basename;
-
-  if (!name)
-    return;
-
-  /* Strip old basename.  */
-  if (*name)
-    {
-      basename = last_component (*name);
-
-      if (basename == *name)
-        xfree (*name);
-      else
-        *basename = '\0';
-    }
-
-  /* New basename from file name reference.  */
-  if (ref)
-    ref = last_component (ref);
-
-  /* Replace the old basename.  */
-  new = aprintf ("%s%s", *name ? *name : "", ref ? ref : "");
-  xfree (*name);
-  *name = new;
-
-  /* Remove prefix drive letters if required, i.e. when in w32
-     environments.  */
-  p = new;
-  while (p[0] != '\0')
-    {
-      while ((n = FILE_SYSTEM_PREFIX_LEN (p)) > 0)
-        p += n;
-
-      if (p != new)
-        {
-          while (ISSLASH (p[0]))
-            ++p;
-          new = p;
-          continue;
-        }
-
-      break;
-    }
-
-  if (*name != new)
-    {
-      new = xstrdup (new);
-      xfree (*name);
-      *name = new;
-    }
-}
-
-/*
-  Strip the directory components from the given name.
-
-  Return a pointer to the end of the leading directory components.
-  Return NULL if the resulting name is unsafe or invalid.
-
-  Due to security issues posed by saving files with unsafe names, here
-  the use of libmetalink's metalink_check_safe_path() is enforced.  If
-  this appears redundant because the given name was already verified,
-  just remember to never underestimate unsafe file names.
-*/
-char *
-get_metalink_basename (char *name)
-{
-  int n;
-  char *basename;
-
-  if (!name)
-    return NULL;
-
-  basename = last_component (name);
-
-  while ((n = FILE_SYSTEM_PREFIX_LEN (basename)) > 0)
-    basename += n;
-
-  return metalink_check_safe_path (basename) ? basename : NULL;
-}
-
-/*
-  Append a separator and a numeric suffix to a string.
-
-  The string is permanently modified.
-*/
-void
-append_suffix_number (char **str, const char *sep, wgint num)
-{
-  char *new, buf[24];
-
-  number_to_string (buf, num);
-  new = aprintf ("%s%s%s", *str ? *str : "", sep ? sep : "", buf);
-  xfree (*str);
-  *str = new;
-}
-
-/*
-  Remove the string's trailing/leading whitespaces and line breaks.
-
-  The string is permanently modified.
-*/
-void
-clean_metalink_string (char **str)
-{
-  int c;
-  size_t len;
-  char *new, *beg, *end;
-
-  if (!str || !*str)
-    return;
-
-  beg = *str;
-
-  while ((c = *beg) && (c == '\n' || c == '\r' || c == '\t' || c == ' '))
-    beg++;
-
-  end = beg;
-
-  /* To not truncate a string containing spaces, search the first '\r'
-     or '\n' which ipotetically marks the end of the string.  */
-  while ((c = *end) && (c != '\r') && (c != '\n'))
-    end++;
-
-  /* If we are at the end of the string, search the first legit
-     character going backward.  */
-  if (*end == '\0')
-    while ((c = *(end - 1)) && (c == '\n' || c == '\r' || c == '\t' || c == ' '))
-      end--;
-
-  len = end - beg;
-
-  new = xmemdup0 (beg, len);
-  xfree (*str);
-  *str = new;
-}
-
-/*
-  Remove the quotation surrounding a string.
-
-  The string is permanently modified.
- */
-void
-dequote_metalink_string (char **str)
-{
-  char *new;
-  size_t str_len;
-
-  if (!str || !*str || ((*str)[0] != '\"' && (*str)[0] != '\''))
-    return;
-
-  str_len = strlen (*str); /* current string length */
-
-  /* Verify if the current string is surrounded by quotes.  */
-  if (str_len < 2 || (*str)[0] != (*str)[str_len - 1])
-    return;
-
-  /* Dequoted string.  */
-  new = xmemdup0 (*str + 1, str_len - 2);
-  xfree (*str);
-  *str = new;
-}
-
-/* Append the suffix ".badhash" to the file NAME, except without
-   overwriting an existing file with that name and suffix.  */
-void
-badhash_suffix (char *name)
-{
-  char *bhash, *uname;
-
-  bhash = concat_strings (name, ".badhash", (char *)0);
-  uname = unique_name (bhash, false);
-
-  logprintf (LOG_VERBOSE, _("Renaming %s to %s.\n"),
-             quote_n (0, name), quote_n (1, uname));
-
-  if (link (name, uname))
-    logprintf (LOG_NOTQUIET, "link: %s\n", strerror (errno));
-  else if (unlink (name))
-    logprintf (LOG_NOTQUIET, "unlink: %s\n", strerror (errno));
-
-  xfree (bhash);
-  xfree (uname);
-}
-
-/* Append the suffix ".badhash" to the file NAME, except without
-   overwriting an existing file with that name and suffix.
-
-   Remove the file NAME if the option --delete-after is specified, or
-   if the option --keep-badhash isn't set.  */
-void
-badhash_or_remove (char *name)
-{
-  if (opt.delete_after || !opt.keep_badhash)
-    {
-      logprintf (LOG_VERBOSE, _("Removing %s.\n"), quote (name));
-      if (unlink (name))
-        logprintf (LOG_NOTQUIET, "unlink: %s\n", strerror (errno));
-    }
-  else
-    {
-      badhash_suffix(name);
-    }
-}
-
-/*
-  Simple file fetch.
-
-  Set DESTNAME to the name of the saved file.
-
-  Resume previous download if RESUME is true.  To disable
-  Metalink/HTTP, set METALINK_HTTP to false.
-*/
-uerr_t
-fetch_metalink_file (const char *url_str,
-                     bool resume, bool metalink_http,
-                     const char *filename, char **destname)
-{
-  FILE *_output_stream = output_stream;
-  bool _output_stream_regular = output_stream_regular;
-  char *_output_document = opt.output_document;
-  bool _metalink_http = opt.metalink_over_http;
-
-  char *local_file = NULL;
-
-  uerr_t retr_err = URLERROR;
-
-  struct iri *iri;
-  struct url *url;
-  int url_err;
-
-  /* Parse the URL.  */
-  iri = iri_new ();
-  set_uri_encoding (iri, opt.locale, true);
-  url = url_parse (url_str, &url_err, iri, false);
-
-  if (!url)
-    {
-      char *error = url_error (url_str, url_err);
-      logprintf (LOG_NOTQUIET, "%s: %s.\n", url_str, error);
-      inform_exit_status (retr_err);
-      iri_free (iri);
-      xfree (error);
-      return retr_err;
-    }
-
-  output_stream = NULL;
-
-  if (resume)
-    /* continue previous download */
-    output_stream = fopen (filename, "ab");
-  else
-    /* create a file with an unique name */
-    output_stream = unique_create (filename, true, &local_file);
-
-  output_stream_regular = true;
-
-  /*
-    If output_stream is NULL, the file couldn't be created/opened.
-    This could be due to the impossibility to create a directory tree:
-    * stdio.h (fopen)
-    * src/utils.c (unique_create)
-
-    A call to retrieve_url() can indirectly create a directory tree,
-    when opt.output_document is set to the destination file name and
-    output_stream is left to NULL:
-    * src/http.c (open_output_stream): If output_stream is NULL,
-      create the destination opt.output_document "path/file"
-  */
-  if (!local_file)
-    local_file = xstrdup (filename);
-
-  /* Store the real file name for displaying in messages, and for
-     proper "path/file" handling.  */
-  opt.output_document = local_file;
-
-  opt.metalink_over_http = metalink_http;
-
-  DEBUGP (("Storing to %s\n", local_file));
-  retr_err = retrieve_url (url, url_str, NULL, NULL,
-                           NULL, NULL, opt.recursive, iri, false);
-
-  if (retr_err == RETROK)
-    {
-      if (destname)
-        *destname = local_file;
-      else
-        xfree (local_file);
-    }
-
-  if (output_stream)
-    {
-      fclose (output_stream);
-      output_stream = NULL;
-    }
-
-  opt.metalink_over_http = _metalink_http;
-  opt.output_document = _output_document;
-  output_stream_regular = _output_stream_regular;
-  output_stream = _output_stream;
-
-  inform_exit_status (retr_err);
-
-  iri_free (iri);
-  url_free (url);
-
-  return retr_err;
 }
 
 int metalink_res_cmp (const void* v1, const void* v2)
@@ -1260,22 +452,13 @@ int metalink_res_cmp (const void* v1, const void* v2)
     {
       int cmp = 0;
       if (res1->location &&
-          !c_strcasecmp (opt.preferred_location, res1->location))
+          !strcasecmp (opt.preferred_location, res1->location))
         cmp -= 1;
       if (res2->location &&
-          !c_strcasecmp (opt.preferred_location, res2->location))
+          !strcasecmp (opt.preferred_location, res2->location))
         cmp += 1;
       return cmp;
     }
-  return 0;
-}
-
-int metalink_meta_cmp (const void* v1, const void* v2)
-{
-  const metalink_metaurl_t *meta1 = *(metalink_metaurl_t **) v1,
-                           *meta2 = *(metalink_metaurl_t **) v2;
-  if (meta1->priority != meta2->priority)
-    return meta1->priority - meta2->priority;
   return 0;
 }
 
@@ -1362,7 +545,6 @@ find_key_value (const char *start, const char *end, const char *key, char **valu
           while (val_end < end && *val_end != ';' && !c_isspace (*val_end))
             val_end++;
           *value = xstrndup (val_beg, val_end - val_beg);
-          dequote_metalink_string (value);
           return true;
         }
     }
@@ -1463,7 +645,6 @@ find_key_values (const char *start, const char *end, char **key, char **value)
 
   *key = xstrndup (key_start, key_end - key_start);
   *value = xstrndup (val_start, val_end - val_start);
-  dequote_metalink_string (value);
 
   /* Skip trailing whitespaces.  */
   while (val_end < end && c_isspace (*val_end))
@@ -1476,10 +657,10 @@ find_key_values (const char *start, const char *end, char **key, char **value)
 const char *
 test_find_key_values (void)
 {
-  static const char *header_data = "key1=val1;key2=\"val2\" ;key3=val3; key4=val4"\
-                                   " ; key5=val5;key6 ='val6';key7= val7; "\
-                                   "key8 = val8 ;    key9    =   \"val9\"       "\
-                                   "    ,key10= 'val10',key11,key12=val12";
+  static const char *header_data = "key1=val1;key2=val2 ;key3=val3; key4=val4"\
+                                   " ; key5=val5;key6 =val6;key7= val7; "\
+                                   "key8 = val8 ;    key9    =   val9       "\
+                                   "    ,key10= val10,key11,key12=val12";
   static const struct
   {
     const char *key;
@@ -1520,9 +701,9 @@ test_find_key_values (void)
 const char *
 test_find_key_value (void)
 {
-  static const char *header_data = "key1=val1;key2=val2 ;key3='val3'; key4=val4"\
-                                   " ; key5='val5';key6 =val6;key7= \"val7\"; "\
-                                   "key8 = \"val8\" ;    key9    =   val9       ";
+  static const char *header_data = "key1=val1;key2=val2 ;key3=val3; key4=val4"\
+                                   " ; key5=val5;key6 =val6;key7= val7; "\
+                                   "key8 = val8 ;    key9    =   val9       ";
   static const struct
   {
     const char *key;

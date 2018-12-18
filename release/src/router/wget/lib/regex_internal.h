@@ -1,5 +1,5 @@
 /* Extended regular expression matching and search library.
-   Copyright (C) 2002-2018 Free Software Foundation, Inc.
+   Copyright (C) 2002-2015 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Isamu Hasegawa <isamu@yamato.ibm.com>.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU General Public
    License along with the GNU C Library; if not, see
-   <https://www.gnu.org/licenses/>.  */
+   <http://www.gnu.org/licenses/>.  */
 
 #ifndef _REGEX_INTERNAL_H
 #define _REGEX_INTERNAL_H 1
@@ -32,8 +32,6 @@
 #include <wctype.h>
 #include <stdbool.h>
 #include <stdint.h>
-
-#include "intprops.h"
 
 #ifdef _LIBC
 # include <libc-lock.h>
@@ -102,7 +100,6 @@
   __dcgettext (_libc_intl_domainname, msgid, LC_MESSAGES)
 # endif
 #else
-# undef gettext
 # define gettext(msgid) (msgid)
 #endif
 
@@ -116,7 +113,11 @@
 # define RE_ENABLE_I18N
 #endif
 
-#define BE(expr, val) __builtin_expect (expr, val)
+#if __GNUC__ >= 3
+# define BE(expr, val) __builtin_expect (expr, val)
+#else
+# define BE(expr, val) (expr)
+#endif
 
 /* Number of ASCII characters.  */
 #define ASCII_CHARS 0x80
@@ -150,22 +151,31 @@
 # define __attribute__(arg)
 #endif
 
-#ifndef SSIZE_MAX
-# define SSIZE_MAX ((ssize_t) (SIZE_MAX / 2))
-#endif
-
-/* The type of indexes into strings.  This is signed, not size_t,
-   since the API requires indexes to fit in regoff_t anyway, and using
-   signed integers makes the code a bit smaller and presumably faster.
-   The traditional GNU regex implementation uses int for indexes.
-   The POSIX-compatible implementation uses a possibly-wider type.
-   The name 'Idx' is three letters to minimize the hassle of
-   reindenting a lot of regex code that formerly used 'int'.  */
-typedef regoff_t Idx;
+typedef __re_idx_t Idx;
 #ifdef _REGEX_LARGE_OFFSETS
-# define IDX_MAX SSIZE_MAX
+# define IDX_MAX (SIZE_MAX - 2)
 #else
 # define IDX_MAX INT_MAX
+#endif
+
+/* Special return value for failure to match.  */
+#define REG_MISSING ((Idx) -1)
+
+/* Special return value for internal error.  */
+#define REG_ERROR ((Idx) -2)
+
+/* Test whether N is a valid index, and is not one of the above.  */
+#ifdef _REGEX_LARGE_OFFSETS
+# define REG_VALID_INDEX(n) ((Idx) (n) < REG_ERROR)
+#else
+# define REG_VALID_INDEX(n) (0 <= (n))
+#endif
+
+/* Test whether N is a valid nonzero index.  */
+#ifdef _REGEX_LARGE_OFFSETS
+# define REG_VALID_NONZERO_INDEX(n) ((Idx) ((n) - 1) < (Idx) (REG_ERROR - 1))
+#else
+# define REG_VALID_NONZERO_INDEX(n) (0 < (n))
 #endif
 
 /* A hash value, suitable for computing hash tables.  */
@@ -438,19 +448,23 @@ struct re_dfa_t;
 typedef struct re_dfa_t re_dfa_t;
 
 #ifndef _LIBC
+# define internal_function
 # define IS_IN(libc) false
 #endif
 
 static reg_errcode_t re_string_realloc_buffers (re_string_t *pstr,
-						Idx new_buf_len);
+						Idx new_buf_len)
+     internal_function;
 #ifdef RE_ENABLE_I18N
-static void build_wcs_buffer (re_string_t *pstr);
-static reg_errcode_t build_wcs_upper_buffer (re_string_t *pstr);
+static void build_wcs_buffer (re_string_t *pstr) internal_function;
+static reg_errcode_t build_wcs_upper_buffer (re_string_t *pstr)
+  internal_function;
 #endif /* RE_ENABLE_I18N */
-static void build_upper_buffer (re_string_t *pstr);
-static void re_string_translate_buffer (re_string_t *pstr);
+static void build_upper_buffer (re_string_t *pstr) internal_function;
+static void re_string_translate_buffer (re_string_t *pstr) internal_function;
 static unsigned int re_string_context_at (const re_string_t *input, Idx idx,
-					  int eflags) __attribute__ ((pure));
+					  int eflags)
+     internal_function __attribute__ ((pure));
 
 #define re_string_peek_byte(pstr, offset) \
   ((pstr)->mbs[(pstr)->cur_idx + offset])
@@ -827,7 +841,7 @@ bitset_mask (bitset_t dest, const bitset_t src)
 #ifdef RE_ENABLE_I18N
 /* Functions for re_string.  */
 static int
-__attribute__ ((pure, unused))
+internal_function __attribute__ ((pure, unused))
 re_string_char_size_at (const re_string_t *pstr, Idx idx)
 {
   int byte_idx;
@@ -840,7 +854,7 @@ re_string_char_size_at (const re_string_t *pstr, Idx idx)
 }
 
 static wint_t
-__attribute__ ((pure, unused))
+internal_function __attribute__ ((pure, unused))
 re_string_wchar_at (const re_string_t *pstr, Idx idx)
 {
   if (pstr->mb_cur_max == 1)
@@ -853,7 +867,7 @@ re_string_wchar_at (const re_string_t *pstr, Idx idx)
 # endif
 
 static int
-__attribute__ ((pure, unused))
+internal_function __attribute__ ((pure, unused))
 re_string_elem_size_at (const re_string_t *pstr, Idx idx)
 {
 # ifdef _LIBC
@@ -893,14 +907,6 @@ re_string_elem_size_at (const re_string_t *pstr, Idx idx)
    __attribute__ ((__warn_unused_result__))
 #else
 # define __attribute_warn_unused_result__ /* empty */
-#endif
-
-#ifndef FALLTHROUGH
-# if __GNUC__ < 7
-#  define FALLTHROUGH ((void) 0)
-# else
-#  define FALLTHROUGH __attribute__ ((__fallthrough__))
-# endif
 #endif
 
 #endif /*  _REGEX_INTERNAL_H */

@@ -1,6 +1,6 @@
 /* Read and parse the .netrc file to get hosts, accounts, and passwords.
-   Copyright (C) 1996, 2007-2011, 2015, 2018 Free Software Foundation,
-   Inc.
+   Copyright (C) 1996, 2007, 2008, 2009, 2010, 2011, 2015 Free Software
+   Foundation, Inc.
 
 This file is part of GNU Wget.
 
@@ -42,11 +42,7 @@ as that of the covered work.  */
 #include "netrc.h"
 #include "init.h"
 
-#ifdef WINDOWS
-#  define NETRC_FILE_NAME "_netrc"
-#else
-#  define NETRC_FILE_NAME ".netrc"
-#endif
+#define NETRC_FILE_NAME ".netrc"
 
 static acc_t *netrc_list;
 
@@ -79,7 +75,7 @@ search_netrc (const char *host, const char **acc, const char **passwd,
 #ifdef __VMS
 
       int err;
-      struct stat buf;
+      struct_stat buf;
       char *path = "SYS$LOGIN:.netrc";
 
       netrc_list = NULL;
@@ -98,7 +94,7 @@ search_netrc (const char *host, const char **acc, const char **passwd,
       if (home)
         {
           int err;
-          struct stat buf;
+          struct_stat buf;
           char *path = (char *)alloca (strlen (home) + 1
                                        + strlen (NETRC_FILE_NAME) + 1);
           sprintf (path, "%s/%s", home, NETRC_FILE_NAME);
@@ -239,7 +235,7 @@ parse_netrc (const char *path)
   /* The latest token we've seen in the file.  */
   enum
   {
-    tok_nothing, tok_account, tok_login, tok_macdef, tok_machine, tok_password, tok_port, tok_force
+    tok_nothing, tok_account, tok_login, tok_macdef, tok_machine, tok_password
   } last_token = tok_nothing;
 
   current = retval = NULL;
@@ -348,18 +344,6 @@ parse_netrc (const char *path)
                 premature_token = "account";
               break;
 
-              /* We don't handle the port keyword at all.  */
-            case tok_port:
-              if (!current)
-                premature_token = "port";
-              break;
-
-              /* We don't handle the force keyword at all.  */
-            case tok_force:
-              if (!current)
-                premature_token = "force";
-              break;
-
               /* We handle tok_nothing below this switch.  */
             case tok_nothing:
               break;
@@ -381,10 +365,10 @@ parse_netrc (const char *path)
               /* Fetch the next token.  */
               if (!strcmp (tok, "account"))
                 last_token = tok_account;
-
               else if (!strcmp (tok, "default"))
+                {
                   maybe_add_to_list (&current, &retval);
-
+                }
               else if (!strcmp (tok, "login"))
                 last_token = tok_login;
 
@@ -396,16 +380,6 @@ parse_netrc (const char *path)
 
               else if (!strcmp (tok, "password"))
                 last_token = tok_password;
-
-				  /* GNU extensions 'port' and 'force', not operational
-					* see https://www.gnu.org/software/emacs/manual/html_node/gnus/NNTP.html#index-nntp_002dauthinfo_002dfunction-2003
-					* see https://savannah.gnu.org/bugs/index.php?52066
-					*/
-              else if (!strcmp (tok, "port"))
-                last_token = tok_port;
-
-              else if (!strcmp (tok, "force"))
-                last_token = tok_force;
 
               else
                 fprintf (stderr, _("%s: %s:%d: unknown token \"%s\"\n"),
@@ -461,14 +435,11 @@ free_netrc(acc_t *l)
 #ifdef STANDALONE
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "exits.h"
-
-const char *program_argstring = NULL; /* Needed by warc.c */
 
 int
 main (int argc, char **argv)
 {
-  struct stat sb;
+  struct_stat sb;
   char *program_name, *file, *target;
   acc_t *head, *a;
 

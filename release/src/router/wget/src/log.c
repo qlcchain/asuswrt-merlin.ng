@@ -1,5 +1,6 @@
 /* Messages logging.
-   Copyright (C) 1998-2011, 2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006,
+   2007, 2008, 2009, 2010, 2011, 2015 Free Software Foundation, Inc.
 
 This file is part of GNU Wget.
 
@@ -78,18 +79,6 @@ as that of the covered work.  */
    either to stderr or to a file pointer obtained from fopen().  If
    logging is inhibited, logfp is set back to NULL. */
 static FILE *logfp;
-
-/* Descriptor of the stdout|stderr */
-static FILE *stdlogfp;
-
-/* Descriptor of the wget.log* file (if created) */
-static FILE *filelogfp;
-
-/* Name of log file */
-static char *logfile;
-
-/* Is interactive shell ? */
-static int shell_is_interactive;
 
 /* A second file descriptor pointing to the temporary log file for the
    WARC writer.  If WARC writing is disabled, this is NULL.  */
@@ -343,9 +332,7 @@ get_warc_log_fp (void)
     return NULL;
   if (warclogfp)
     return warclogfp;
-  if (logfp)
-    return NULL;
-  return stderr;
+  return NULL;
 }
 
 /* Sets the file descriptor for the secondary log file.  */
@@ -533,7 +520,7 @@ log_set_flush (bool flush)
     }
   else
     {
-      /* Re-enable flushing.  If anything was printed in no-flush mode,
+      /* Reenable flushing.  If anything was printed in no-flush mode,
          flush the log now.  */
       if (needs_flushing)
         logflush ();
@@ -624,18 +611,16 @@ log_init (const char *file, bool appendp)
     {
       if (HYPHENP (file))
         {
-          stdlogfp = stdout;
-          logfp = stdlogfp;
+          logfp = stdout;
         }
       else
         {
-          filelogfp = fopen (file, appendp ? "a" : "w");
-          if (!filelogfp)
+          logfp = fopen (file, appendp ? "a" : "w");
+          if (!logfp)
             {
               fprintf (stderr, "%s: %s: %s\n", exec_name, file, strerror (errno));
               exit (WGET_EXIT_GENERIC_ERROR);
             }
-          logfp = filelogfp;
         }
     }
   else
@@ -646,8 +631,7 @@ log_init (const char *file, bool appendp)
          stderr only if the user actually specifies `-O -'.  He says
          this inconsistency is harder to document, but is overall
          easier on the user.  */
-      stdlogfp = stderr;
-      logfp = stdlogfp;
+      logfp = stderr;
 
       if (1
 #ifdef HAVE_ISATTY
@@ -662,11 +646,6 @@ log_init (const char *file, bool appendp)
           save_context_p = true;
         }
     }
-
-#ifndef WINDOWS
-  /* Initialize this values so we don't have to ask every time we print line */
-  shell_is_interactive = isatty (STDIN_FILENO);
-#endif
 }
 
 /* Close LOGFP (only if we opened it, not if it's stderr), inhibit
@@ -901,80 +880,59 @@ log_cleanup (void)
 
 /* When SIGHUP or SIGUSR1 are received, the output is redirected
    elsewhere.  Such redirection is only allowed once. */
+static enum { RR_NONE, RR_REQUESTED, RR_DONE } redirect_request = RR_NONE;
 static const char *redirect_request_signal_name;
 
-/* Redirect output to `wget-log' or back to stdout/stderr.  */
+/* Redirect output to `wget-log'.  */
 
-void
-redirect_output (bool to_file, const char *signal_name)
+static void
+redirect_output (void)
 {
-  if (to_file && logfp != filelogfp)
+  char *logfile;
+  logfp = unique_create (DEFAULT_LOGFILE, false, &logfile);
+  if (logfp)
     {
-      if (signal_name)
-        {
-          fprintf (stderr, "\n%s received.", signal_name);
-        }
-      if (!filelogfp)
-        {
-          filelogfp = unique_create (DEFAULT_LOGFILE, false, &logfile);
-          if (filelogfp)
-            {
-              fprintf (stderr, _("\nRedirecting output to %s.\n"),
-                  quote (logfile));
-              /* Store signal name to tell wget it's permanent redirect to log file */
-              redirect_request_signal_name = signal_name;
-              logfp = filelogfp;
-              /* Dump the context output to the newly opened log.  */
-              log_dump_context ();
-            }
-          else
-            {
-              /* Eek!  Opening the alternate log file has failed.  Nothing we
-                can do but disable printing completely. */
-              fprintf (stderr, _("%s: %s; disabling logging.\n"),
-                      (logfile) ? logfile : DEFAULT_LOGFILE, strerror (errno));
-              inhibit_logging = true;
-            }
-        }
-      else
-        {
-          fprintf (stderr, _("\nRedirecting output to %s.\n"),
-              quote (logfile));
-          logfp = filelogfp;
-          log_dump_context ();
-        }
-    }
-  else if (!to_file && logfp != stdlogfp)
-    {
-      logfp = stdlogfp;
+      fprintf (stderr, _("\n%s received, redirecting output to %s.\n"),
+               redirect_request_signal_name, quote (logfile));
+      xfree (logfile);
+      /* Dump the context output to the newly opened log.  */
       log_dump_context ();
     }
+  else
+    {
+      /* Eek!  Opening the alternate log file has failed.  Nothing we
+         can do but disable printing completely. */
+      fprintf (stderr, _("\n%s received.\n"), redirect_request_signal_name);
+      fprintf (stderr, _("%s: %s; disabling logging.\n"),
+               (logfile) ? logfile : DEFAULT_LOGFILE, strerror (errno));
+      inhibit_logging = true;
+    }
+  save_context_p = false;
 }
 
-/* Check whether there's a need to redirect output. */
+/* Check whether a signal handler requested the output to be
+   redirected. */
 
 static void
 check_redirect_output (void)
 {
-#ifndef WINDOWS
-  /* If it was redirected already to log file by SIGHUP, SIGUSR1 or -o parameter,
-   * it was permanent.
-   * If there was no SIGHUP or SIGUSR1 and shell is interactive
-   * we check if process is fg or bg before every line is printed.*/
-  if (!redirect_request_signal_name && shell_is_interactive && !opt.lfilename)
+  if (redirect_request == RR_REQUESTED)
     {
-      pid_t foreground_pgrp = tcgetpgrp (STDIN_FILENO);
-
-      if (foreground_pgrp != -1 && foreground_pgrp != getpgrp ())
-        {
-          /* Process backgrounded */
-          redirect_output (true,NULL);
-        }
-      else
-        {
-          /* Process foregrounded */
-          redirect_output (false,NULL);
-        }
+      redirect_request = RR_DONE;
+      redirect_output ();
     }
-#endif /* WINDOWS */
+}
+
+/* Request redirection at a convenient time.  This may be called from
+   a signal handler. */
+
+void
+log_request_redirect_output (const char *signal_name)
+{
+  if (redirect_request == RR_NONE && save_context_p)
+    /* Request output redirection.  The request will be processed by
+       check_redirect_output(), which is called from entry point log
+       functions. */
+    redirect_request = RR_REQUESTED;
+  redirect_request_signal_name = signal_name;
 }

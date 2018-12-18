@@ -1,8 +1,10 @@
-This is wget.info, produced by makeinfo version 6.5 from wget.texi.
+This is wget.info, produced by makeinfo version 6.0 from wget.texi.
 
 This file documents the GNU Wget utility for downloading network data.
 
-   Copyright © 1996-2011, 2015, 2018 Free Software Foundation, Inc.
+   Copyright © 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
+2005, 2006, 2007, 2008, 2009, 2010, 2011, 2015 Free Software Foundation,
+Inc.
 
    Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -18,12 +20,14 @@ END-INFO-DIR-ENTRY
 
 File: wget.info,  Node: Top,  Next: Overview,  Prev: (dir),  Up: (dir)
 
-Wget 1.20
+Wget 1.18
 *********
 
 This file documents the GNU Wget utility for downloading network data.
 
-   Copyright © 1996-2011, 2015, 2018 Free Software Foundation, Inc.
+   Copyright © 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
+2005, 2006, 2007, 2008, 2009, 2010, 2011, 2015 Free Software Foundation,
+Inc.
 
    Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -111,8 +115,7 @@ retrieval through HTTP proxies.
      Startup File::).  Wget allows you to define “global” startup files
      (‘/usr/local/etc/wgetrc’ by default) for site settings.  You can
      also specify the location of a startup file with the –config
-     option.  To disable the reading of config files, use –no-config.
-     If both –config and –no-config are given, –no-config is ignored.
+     option.
 
    • Finally, GNU Wget is free software.  This means that everyone may
      use it, redistribute it and/or modify it under the terms of the GNU
@@ -128,7 +131,7 @@ File: wget.info,  Node: Invoking,  Next: Recursive Download,  Prev: Overview,  U
 
 By default, Wget is very simple to invoke.  The basic syntax is:
 
-     wget [OPTION]... [URL]...
+     wget [OPTION]… [URL]…
 
    Wget will simply download all the URLs specified on the command line.
 URL is a “Uniform Resource Locator”, as defined below.
@@ -140,18 +143,18 @@ command line.
 
 * Menu:
 
-* URL Format::
-* Option Syntax::
-* Basic Startup Options::
-* Logging and Input File Options::
-* Download Options::
-* Directory Options::
-* HTTP Options::
-* HTTPS (SSL/TLS) Options::
-* FTP Options::
-* Recursive Retrieval Options::
-* Recursive Accept/Reject Options::
-* Exit Status::
+* URL Format::                  
+* Option Syntax::               
+* Basic Startup Options::       
+* Logging and Input File Options::  
+* Download Options::            
+* Directory Options::           
+* HTTP Options::                
+* HTTPS (SSL/TLS) Options::     
+* FTP Options::                 
+* Recursive Retrieval Options::  
+* Recursive Accept/Reject Options::  
+* Exit Status::                 
 
 
 File: wget.info,  Node: URL Format,  Next: Option Syntax,  Prev: Invoking,  Up: Invoking
@@ -382,25 +385,11 @@ File: wget.info,  Node: Logging and Input File Options,  Next: Download Options,
      Downloads files covered in local Metalink FILE.  Metalink version 3
      and 4 are supported.
 
-‘--keep-badhash’
-     Keeps downloaded Metalink’s files with a bad hash.  It appends
-     .badhash to the name of Metalink’s files which have a checksum
-     mismatch, except without overwriting existing files.
-
 ‘--metalink-over-http’
      Issues HTTP HEAD request instead of GET and extracts Metalink
      metadata from response headers.  Then it switches to Metalink
      download.  If no valid Metalink metadata is found, it falls back to
-     ordinary HTTP download.  Enables ‘Content-Type:
-     application/metalink4+xml’ files download/processing.
-
-‘--metalink-index=NUMBER’
-     Set the Metalink ‘application/metalink4+xml’ metaurl ordinal
-     NUMBER. From 1 to the total number of “application/metalink4+xml”
-     available.  Specify 0 or ‘inf’ to choose the first good one.
-     Metaurls, such as those from a ‘--metalink-over-http’, may have
-     been sorted by priority key’s value; keep this in mind to choose
-     the right NUMBER.
+     ordinary HTTP download.
 
 ‘--preferred-location’
      Set preferred location for Metalink resources.  This has effect if
@@ -427,10 +416,7 @@ File: wget.info,  Node: Logging and Input File Options,  Next: Download Options,
      resolved to ‘http://foo/baz/b.html’.
 
 ‘--config=FILE’
-     Specify the location of a startup file you wish to use instead of
-     the default one(s).  Use –no-config to disable reading of config
-     files.  If both –config and –no-config are given, –no-config is
-     ignored.
+     Specify the location of a startup file you wish to use.
 
 ‘--rejected-log=LOGFILE’
      Logs all URL rejections to LOGFILE as comma separated values.  The
@@ -550,11 +536,6 @@ File: wget.info,  Node: Download Options,  Next: Directory Options,  Prev: Loggi
      rotated to ‘.2’, ‘.3’, and so on, up to BACKUPS (and lost beyond
      that).
 
-‘--no-netrc’
-     Do not try to obtain credentials from ‘.netrc’ file.  By default
-     ‘.netrc’ file is searched for credentials in case none have been
-     passed on command line and authentication is required.
-
 ‘-c’
 ‘--continue’
      Continue getting a partially-downloaded file.  This is useful when
@@ -662,7 +643,7 @@ File: wget.info,  Node: Download Options,  Next: Directory Options,  Prev: Loggi
 
      When the output is not a TTY, the progress bar always falls back to
      “dot”, even if ‘--progress=bar’ was passed to Wget during
-     invocation.  This behaviour can be overridden and the “bar” output
+     invokation.  This behaviour can be overridden and the “bar” output
      forced by using the “force” parameter as ‘--progress=bar:force’.
 
      By default, the ‘bar’ style progress bar scroll the name of the
@@ -985,15 +966,6 @@ File: wget.info,  Node: Download Options,  Next: Directory Options,  Prev: Loggi
      specified when ‘--password’ is being used, because they are
      mutually exclusive.
 
-‘--use-askpass=COMMAND’
-     Prompt for a user and password using the specified command.  If no
-     command is specified then the command in the environment variable
-     WGET_ASKPASS is used.  If WGET_ASKPASS is not set then the command
-     in the environment variable SSH_ASKPASS is used.
-
-     You can set the default command for use-askpass in the ‘.wgetrc’.
-     That setting may be overridden from the command line.
-
 ‘--no-iri’
 
      Turn off internationalized URI (IRI) support.  Use ‘--iri’ to turn
@@ -1138,11 +1110,6 @@ File: wget.info,  Node: HTTP Options,  Next: HTTPS (SSL/TLS) Options,  Prev: Dir
      behavior.  The old option name is still acceptable, but should now
      be considered deprecated.
 
-     As of version 1.19.2, Wget will also ensure that any downloaded
-     files with a ‘Content-Encoding’ of ‘br’, ‘compress’, ‘deflate’ or
-     ‘gzip’ end in the suffix ‘.br’, ‘.Z’, ‘.zlib’ and ‘.gz’
-     respectively.
-
      At some point in the future, this option may well be expanded to
      include suffixes for other types of content, including content
      types that are not parsed by Wget.
@@ -1157,11 +1124,11 @@ File: wget.info,  Node: HTTP Options,  Next: HTTPS (SSL/TLS) Options,  Prev: Dir
      Another way to specify username and password is in the URL itself
      (*note URL Format::).  Either method reveals your password to
      anyone who bothers to run ‘ps’.  To prevent the passwords from
-     being seen, use the ‘--use-askpass’ or store them in ‘.wgetrc’ or
-     ‘.netrc’, and make sure to protect those files from other users
-     with ‘chmod’.  If the passwords are really important, do not leave
-     them lying in those files either—edit the files and delete them
-     after Wget has started the download.
+     being seen, store them in ‘.wgetrc’ or ‘.netrc’, and make sure to
+     protect those files from other users with ‘chmod’.  If the
+     passwords are really important, do not leave them lying in those
+     files either—edit the files and delete them after Wget has started
+     the download.
 
 ‘--no-http-keep-alive’
      Turn off the “keep-alive” feature for HTTP downloads.  Normally,
@@ -1300,23 +1267,6 @@ File: wget.info,  Node: HTTP Options,  Next: HTTPS (SSL/TLS) Options,  Prev: Dir
 
      In versions of Wget prior to 1.10 such use of ‘--header’ caused
      sending of duplicate headers.
-
-‘--compression=TYPE’
-     Choose the type of compression to be used.  Legal values are
-     ‘auto’, ‘gzip’ and ‘none’.
-
-     If ‘auto’ or ‘gzip’ are specified, Wget asks the server to compress
-     the file using the gzip compression format.  If the server
-     compresses the file and responds with the ‘Content-Encoding’ header
-     field set appropriately, the file will be decompressed
-     automatically.
-
-     If ‘none’ is specified, wget will not ask the server to compress
-     the file and will not decompress any server responses.  This is the
-     default.
-
-     Compression support is currently experimental.  In case it is
-     turned on, please report any bugs to ‘bug-wget@gnu.org’.
 
 ‘--max-redirect=NUMBER’
      Specifies the maximum number of redirections to follow for a
@@ -1479,11 +1429,6 @@ File: wget.info,  Node: HTTP Options,  Next: HTTPS (SSL/TLS) Options,  Prev: Dir
      use ‘Content-Disposition’ headers to describe what the name of a
      downloaded file should be.
 
-     When combined with ‘--metalink-over-http’ and
-     ‘--trust-server-names’, a ‘Content-Type: application/metalink4+xml’
-     file is named using the ‘Content-Disposition’ filename field, if
-     available.
-
 ‘--content-on-error’
 
      If this is set to on, wget will not skip the content when the
@@ -1491,11 +1436,9 @@ File: wget.info,  Node: HTTP Options,  Next: HTTPS (SSL/TLS) Options,  Prev: Dir
 
 ‘--trust-server-names’
 
-     If this is set, on a redirect, the local file name will be based on
-     the redirection URL. By default the local file name is based on the
-     original URL. When doing recursive retrieving this can be helpful
-     because in many web sites redirected URLs correspond to an
-     underlying file structure, while link URLs do not.
+     If this is set to on, on a redirect the last component of the
+     redirection URL will be used as the local file name.  By default it
+     is used the last component in the original URL.
 
 ‘--auth-no-challenge’
 
@@ -1507,21 +1450,6 @@ File: wget.info,  Node: HTTP Options,  Next: HTTPS (SSL/TLS) Options,  Prev: Dir
      support some few obscure servers, which never send HTTP
      authentication challenges, but accept unsolicited auth info, say,
      in addition to form-based authentication.
-
-‘--retry-on-http-error=CODE[,CODE,...]’
-     Consider given HTTP response codes as non-fatal, transient errors.
-     Supply a comma-separated list of 3-digit HTTP response codes as
-     argument.  Useful to work around special circumstances where
-     retries are required, but the server responds with an error code
-     normally not retried by Wget.  Such errors might be 503 (Service
-     Unavailable) and 429 (Too Many Requests).  Retries enabled by this
-     option are performed subject to the normal retry timing and retry
-     count limitations of Wget.
-
-     Using this option is intended to support special use cases only and
-     is generally not recommended, as it can force retries even in cases
-     where the server is actually trying to decrease its load.  Please
-     use wisely and only if you know what you are doing.
 
 
 File: wget.info,  Node: HTTPS (SSL/TLS) Options,  Next: FTP Options,  Prev: HTTP Options,  Up: Invoking
@@ -2665,9 +2593,9 @@ say.
 
 * Menu:
 
-* Time-Stamping Usage::
-* HTTP Time-Stamping Internals::
-* FTP Time-Stamping Internals::
+* Time-Stamping Usage::         
+* HTTP Time-Stamping Internals::  
+* FTP Time-Stamping Internals::  
 
 
 File: wget.info,  Node: Time-Stamping Usage,  Next: HTTP Time-Stamping Internals,  Prev: Time-Stamping,  Up: Time-Stamping
@@ -2943,8 +2871,8 @@ content_disposition = on/off
      HTTP header—if set to ‘on’, the same as ‘--content-disposition’.
 
 trust_server_names = on/off
-     If set to on, construct the local file name from redirection URLs
-     rather than original URLs.
+     If set to on, use the last component of a redirection URL for the
+     local file name.
 
 continue = on/off
      If set to on, force continuation of preexistent partially retrieved
@@ -3047,17 +2975,11 @@ glob = on/off
 header = STRING
      Define a header for HTTP downloads, like using ‘--header=STRING’.
 
-compression = STRING
-     Choose the compression type to be used.  Legal values are ‘auto’
-     (the default), ‘gzip’, and ‘none’.  The same as
-     ‘--compression=STRING’.
-
 adjust_extension = on/off
      Add a ‘.html’ extension to ‘text/html’ or ‘application/xhtml+xml’
-     files that lack one, a ‘.css’ extension to ‘text/css’ files that
-     lack one, and a ‘.br’, ‘.Z’, ‘.zlib’ or ‘.gz’ to compressed files
-     like ‘-E’.  Previously named ‘html_extension’ (still acceptable,
-     but deprecated).
+     files that lack one, or a ‘.css’ extension to ‘text/css’ files that
+     lack one, like ‘-E’.  Previously named ‘html_extension’ (still
+     acceptable, but deprecated).
 
 http_keep_alive = on/off
      Turn the keep-alive feature on or off (defaults to on).  Turning it
@@ -3783,7 +3705,7 @@ File: wget.info,  Node: Distribution,  Next: Web Site,  Prev: Proxies,  Up: Vari
 
 Like all GNU utilities, the latest version of Wget can be found at the
 master GNU archive site ftp.gnu.org, and its mirrors.  For example, Wget
-1.20 can be found at <https://ftp.gnu.org/pub/gnu/wget/wget-1.20.tar.gz>
+1.18 can be found at <https://ftp.gnu.org/pub/gnu/wget/wget-1.18.tar.gz>
 
 
 File: wget.info,  Node: Web Site,  Next: Mailing Lists,  Prev: Distribution,  Up: Various
@@ -4017,7 +3939,7 @@ further downloads.  ‘robots.txt’ is loaded only once per each server.
 
    Until version 1.8, Wget supported the first version of the standard,
 written by Martijn Koster in 1994 and available at
-<http://www.robotstxt.org/orig.html>.  As of version 1.8, Wget has
+<http://www.robotstxt.org/robotstxt.html>.  As of version 1.8, Wget has
 supported the additional directives specified in the internet draft
 ‘<draft-koster-robots-00.txt>’ titled “A Method for Web Robots Control”.
 The draft, which has as far as I know never made to an RFC, is available
@@ -4033,8 +3955,8 @@ followed by a robot.  This is achieved using the ‘META’ tag, like this:
      <meta name="robots" content="nofollow">
 
    This is explained in some detail at
-<http://www.robotstxt.org/meta.html>.  Wget supports this method of
-robot exclusion in addition to the usual ‘/robots.txt’ exclusion.
+<http://www.robotstxt.org/wc/meta-user.html>.  Wget supports this method
+of robot exclusion in addition to the usual ‘/robots.txt’ exclusion.
 
    If you know what you are doing and really really wish to turn off the
 robot exclusion, set the ‘robots’ variable to ‘off’ in your ‘.wgetrc’.
@@ -4210,7 +4132,7 @@ A.1 GNU Free Documentation License
 
                      Version 1.3, 3 November 2008
 
-     Copyright © 2000-2002, 2007-2008, 2015, 2018 Free Software
+     Copyright © 2000, 2001, 2002, 2007, 2008, 2015 Free Software
      Foundation, Inc.
      <http://fsf.org/>
 
@@ -4670,7 +4592,7 @@ notices just after the title page:
        Free Documentation License''.
 
    If you have Invariant Sections, Front-Cover Texts and Back-Cover
-Texts, replace the “with...Texts.” line with this:
+Texts, replace the “with…Texts.” line with this:
 
          with the Invariant Sections being LIST THEIR TITLES, with
          the Front-Cover Texts being LIST, and with the Back-Cover Texts
@@ -4707,22 +4629,21 @@ Concept Index
 * append to log:                         Logging and Input File Options.
                                                               (line  11)
 * arguments:                             Invoking.            (line   6)
-* authentication:                        Download Options.    (line 535)
-* authentication <1>:                    HTTP Options.        (line  43)
-* authentication <2>:                    HTTP Options.        (line 393)
-* authentication credentials:            Download Options.    (line 113)
+* authentication:                        Download Options.    (line 530)
+* authentication <1>:                    HTTP Options.        (line  38)
+* authentication <2>:                    HTTP Options.        (line 364)
 * backing up converted files:            Recursive Retrieval Options.
                                                               (line  90)
 * backing up files:                      Download Options.    (line 107)
-* bandwidth, limit:                      Download Options.    (line 330)
+* bandwidth, limit:                      Download Options.    (line 325)
 * base for relative links in input file: Logging and Input File Options.
-                                                              (line 104)
+                                                              (line  90)
 * bind address:                          Download Options.    (line   6)
 * bind DNS address:                      Download Options.    (line  11)
 * bug reports:                           Reporting Bugs.      (line   6)
 * bugs:                                  Reporting Bugs.      (line   6)
-* cache:                                 HTTP Options.        (line  71)
-* caching of DNS lookups:                Download Options.    (line 414)
+* cache:                                 HTTP Options.        (line  66)
+* caching of DNS lookups:                Download Options.    (line 409)
 * case fold:                             Recursive Accept/Reject Options.
                                                               (line  62)
 * client DNS address:                    Download Options.    (line  11)
@@ -4731,20 +4652,19 @@ Concept Index
 * command line:                          Invoking.            (line   6)
 * comments, HTML:                        Recursive Retrieval Options.
                                                               (line 168)
-* connect timeout:                       Download Options.    (line 314)
-* Content On Error:                      HTTP Options.        (line 380)
-* Content-Disposition:                   HTTP Options.        (line 363)
-* Content-Encoding, choose:              HTTP Options.        (line 197)
-* Content-Length, ignore:                HTTP Options.        (line 160)
-* continue retrieval:                    Download Options.    (line 118)
-* continue retrieval <1>:                Download Options.    (line 177)
+* connect timeout:                       Download Options.    (line 309)
+* Content On Error:                      HTTP Options.        (line 353)
+* Content-Disposition:                   HTTP Options.        (line 341)
+* Content-Length, ignore:                HTTP Options.        (line 155)
+* continue retrieval:                    Download Options.    (line 113)
+* continue retrieval <1>:                Download Options.    (line 172)
 * contributors:                          Contributors.        (line   6)
 * conversion of links:                   Recursive Retrieval Options.
                                                               (line  32)
-* cookies:                               HTTP Options.        (line  80)
-* cookies, loading:                      HTTP Options.        (line  90)
-* cookies, saving:                       HTTP Options.        (line 138)
-* cookies, session:                      HTTP Options.        (line 143)
+* cookies:                               HTTP Options.        (line  75)
+* cookies, loading:                      HTTP Options.        (line  85)
+* cookies, saving:                       HTTP Options.        (line 133)
+* cookies, session:                      HTTP Options.        (line 138)
 * cut directories:                       Directory Options.   (line  32)
 * debug:                                 Logging and Input File Options.
                                                               (line  17)
@@ -4760,12 +4680,12 @@ Concept Index
 * directory limits:                      Directory-Based Limits.
                                                               (line   6)
 * directory prefix:                      Directory Options.   (line  59)
-* DNS cache:                             Download Options.    (line 414)
+* DNS cache:                             Download Options.    (line 409)
 * DNS IP address, client, DNS:           Download Options.    (line  11)
 * DNS IP address, client, DNS <1>:       Download Options.    (line  19)
 * DNS server:                            Download Options.    (line  19)
-* DNS timeout:                           Download Options.    (line 308)
-* dot style:                             Download Options.    (line 189)
+* DNS timeout:                           Download Options.    (line 303)
+* dot style:                             Download Options.    (line 184)
 * downloading multiple times:            Download Options.    (line  68)
 * EGD:                                   HTTPS (SSL/TLS) Options.
                                                               (line 131)
@@ -4779,7 +4699,7 @@ Concept Index
 * FDL, GNU Free Documentation License:   GNU Free Documentation License.
                                                               (line   6)
 * features:                              Overview.            (line   6)
-* file names, restrict:                  Download Options.    (line 433)
+* file names, restrict:                  Download Options.    (line 428)
 * file permissions:                      FTP Options.         (line  73)
 * filling proxy cache:                   Recursive Retrieval Options.
                                                               (line  16)
@@ -4788,7 +4708,7 @@ Concept Index
 * following ftp links:                   FTP Links.           (line   6)
 * following links:                       Following Links.     (line   6)
 * force html:                            Logging and Input File Options.
-                                                              (line  97)
+                                                              (line  83)
 * ftp authentication:                    FTP Options.         (line   6)
 * ftp password:                          FTP Options.         (line   6)
 * ftp time-stamping:                     FTP Time-Stamping Internals.
@@ -4796,25 +4716,25 @@ Concept Index
 * ftp user:                              FTP Options.         (line   6)
 * globbing, toggle:                      FTP Options.         (line  45)
 * hangup:                                Signals.             (line   6)
-* header, add:                           HTTP Options.        (line 171)
+* header, add:                           HTTP Options.        (line 166)
 * hosts, spanning:                       Spanning Hosts.      (line   6)
 * HSTS:                                  HTTPS (SSL/TLS) Options.
                                                               (line 150)
 * HTML comments:                         Recursive Retrieval Options.
                                                               (line 168)
-* http password:                         HTTP Options.        (line  43)
-* http referer:                          HTTP Options.        (line 229)
+* http password:                         HTTP Options.        (line  38)
+* http referer:                          HTTP Options.        (line 207)
 * http time-stamping:                    HTTP Time-Stamping Internals.
                                                               (line   6)
-* http user:                             HTTP Options.        (line  43)
-* idn support:                           Download Options.    (line 557)
+* http user:                             HTTP Options.        (line  38)
+* idn support:                           Download Options.    (line 543)
 * ignore case:                           Recursive Accept/Reject Options.
                                                               (line  62)
-* ignore length:                         HTTP Options.        (line 160)
+* ignore length:                         HTTP Options.        (line 155)
 * include directories:                   Directory-Based Limits.
                                                               (line  17)
-* incomplete downloads:                  Download Options.    (line 118)
-* incomplete downloads <1>:              Download Options.    (line 177)
+* incomplete downloads:                  Download Options.    (line 113)
+* incomplete downloads <1>:              Download Options.    (line 172)
 * incremental updating:                  Time-Stamping.       (line   6)
 * index.html:                            HTTP Options.        (line   6)
 * input-file:                            Logging and Input File Options.
@@ -4824,102 +4744,98 @@ Concept Index
 * Internet Relay Chat:                   Internet Relay Chat. (line   6)
 * invoking:                              Invoking.            (line   6)
 * IP address, client:                    Download Options.    (line   6)
-* IPv6:                                  Download Options.    (line 483)
+* IPv6:                                  Download Options.    (line 478)
 * IRC:                                   Internet Relay Chat. (line   6)
-* iri support:                           Download Options.    (line 557)
-* Keep-Alive, turning off:               HTTP Options.        (line  59)
-* keep-badhash:                          Logging and Input File Options.
-                                                              (line  73)
+* iri support:                           Download Options.    (line 543)
+* Keep-Alive, turning off:               HTTP Options.        (line  54)
 * latest version:                        Distribution.        (line   6)
-* limit bandwidth:                       Download Options.    (line 330)
+* limit bandwidth:                       Download Options.    (line 325)
 * link conversion:                       Recursive Retrieval Options.
                                                               (line  32)
 * links:                                 Following Links.     (line   6)
 * list:                                  Mailing Lists.       (line   5)
-* loading cookies:                       HTTP Options.        (line  90)
-* local encoding:                        Download Options.    (line 566)
+* loading cookies:                       HTTP Options.        (line  85)
+* local encoding:                        Download Options.    (line 552)
 * location of wgetrc:                    Wgetrc Location.     (line   6)
 * log file:                              Logging and Input File Options.
                                                               (line   6)
 * mailing list:                          Mailing Lists.       (line   6)
-* metalink-index:                        Logging and Input File Options.
-                                                              (line  85)
 * metalink-over-http:                    Logging and Input File Options.
-                                                              (line  78)
+                                                              (line  73)
 * mirroring:                             Very Advanced Usage. (line   6)
 * no parent:                             Directory-Based Limits.
                                                               (line  43)
 * no-clobber:                            Download Options.    (line  68)
 * nohup:                                 Invoking.            (line   6)
 * number of tries:                       Download Options.    (line  26)
-* offset:                                Download Options.    (line 177)
+* offset:                                Download Options.    (line 172)
 * operating systems:                     Portability.         (line   6)
 * option syntax:                         Option Syntax.       (line   6)
-* Other HTTP Methods:                    HTTP Options.        (line 330)
+* Other HTTP Methods:                    HTTP Options.        (line 308)
 * output file:                           Logging and Input File Options.
                                                               (line   6)
 * overview:                              Overview.            (line   6)
 * page requisites:                       Recursive Retrieval Options.
                                                               (line 103)
 * passive ftp:                           FTP Options.         (line  61)
-* password:                              Download Options.    (line 535)
-* pause:                                 Download Options.    (line 350)
-* Persistent Connections, disabling:     HTTP Options.        (line  59)
+* password:                              Download Options.    (line 530)
+* pause:                                 Download Options.    (line 345)
+* Persistent Connections, disabling:     HTTP Options.        (line  54)
 * portability:                           Portability.         (line   6)
-* POST:                                  HTTP Options.        (line 262)
+* POST:                                  HTTP Options.        (line 240)
 * preferred-location:                    Logging and Input File Options.
-                                                              (line  93)
-* progress indicator:                    Download Options.    (line 189)
+                                                              (line  79)
+* progress indicator:                    Download Options.    (line 184)
 * proxies:                               Proxies.             (line   6)
-* proxy:                                 Download Options.    (line 391)
-* proxy <1>:                             HTTP Options.        (line  71)
-* proxy authentication:                  HTTP Options.        (line 220)
+* proxy:                                 Download Options.    (line 386)
+* proxy <1>:                             HTTP Options.        (line  66)
+* proxy authentication:                  HTTP Options.        (line 198)
 * proxy filling:                         Recursive Retrieval Options.
                                                               (line  16)
-* proxy password:                        HTTP Options.        (line 220)
-* proxy user:                            HTTP Options.        (line 220)
+* proxy password:                        HTTP Options.        (line 198)
+* proxy user:                            HTTP Options.        (line 198)
 * quiet:                                 Logging and Input File Options.
                                                               (line  28)
-* quota:                                 Download Options.    (line 398)
-* random wait:                           Download Options.    (line 373)
+* quota:                                 Download Options.    (line 393)
+* random wait:                           Download Options.    (line 368)
 * randomness, specifying source of:      HTTPS (SSL/TLS) Options.
                                                               (line 116)
-* rate, limit:                           Download Options.    (line 330)
-* read timeout:                          Download Options.    (line 319)
+* rate, limit:                           Download Options.    (line 325)
+* read timeout:                          Download Options.    (line 314)
 * recursion:                             Recursive Download.  (line   6)
 * recursive download:                    Recursive Download.  (line   6)
-* redirect:                              HTTP Options.        (line 214)
+* redirect:                              HTTP Options.        (line 192)
 * redirecting output:                    Advanced Usage.      (line  89)
-* referer, http:                         HTTP Options.        (line 229)
+* referer, http:                         HTTP Options.        (line 207)
 * reject directories:                    Directory-Based Limits.
                                                               (line  30)
 * reject suffixes:                       Types of Files.      (line  39)
 * reject wildcards:                      Types of Files.      (line  39)
 * relative links:                        Relative Links.      (line   6)
-* remote encoding:                       Download Options.    (line 580)
+* remote encoding:                       Download Options.    (line 566)
 * reporting bugs:                        Reporting Bugs.      (line   6)
 * required images, downloading:          Recursive Retrieval Options.
                                                               (line 103)
-* resume download:                       Download Options.    (line 118)
-* resume download <1>:                   Download Options.    (line 177)
+* resume download:                       Download Options.    (line 113)
+* resume download <1>:                   Download Options.    (line 172)
 * retries:                               Download Options.    (line  26)
-* retries, waiting between:              Download Options.    (line 364)
+* retries, waiting between:              Download Options.    (line 359)
 * retrieving:                            Recursive Download.  (line   6)
 * robot exclusion:                       Robot Exclusion.     (line   6)
 * robots.txt:                            Robot Exclusion.     (line   6)
 * sample wgetrc:                         Sample Wgetrc.       (line   6)
-* saving cookies:                        HTTP Options.        (line 138)
+* saving cookies:                        HTTP Options.        (line 133)
 * security:                              Security Considerations.
                                                               (line   6)
 * server maintenance:                    Robot Exclusion.     (line   6)
-* server response, print:                Download Options.    (line 274)
-* server response, save:                 HTTP Options.        (line 236)
-* session cookies:                       HTTP Options.        (line 143)
+* server response, print:                Download Options.    (line 269)
+* server response, save:                 HTTP Options.        (line 214)
+* session cookies:                       HTTP Options.        (line 138)
 * signal handling:                       Signals.             (line   6)
 * spanning hosts:                        Spanning Hosts.      (line   6)
 * specify config:                        Logging and Input File Options.
-                                                              (line 117)
-* spider:                                Download Options.    (line 279)
+                                                              (line 103)
+* spider:                                Download Options.    (line 274)
 * SSL:                                   HTTPS (SSL/TLS) Options.
                                                               (line   6)
 * SSL certificate:                       HTTPS (SSL/TLS) Options.
@@ -4936,7 +4852,7 @@ Concept Index
                                                               (line  11)
 * SSL Public Key Pin:                    HTTPS (SSL/TLS) Options.
                                                               (line 104)
-* start position:                        Download Options.    (line 177)
+* start position:                        Download Options.    (line 172)
 * startup:                               Startup File.        (line   6)
 * startup file:                          Startup File.        (line   6)
 * suffixes, accept:                      Types of Files.      (line  15)
@@ -4948,95 +4864,95 @@ Concept Index
                                                               (line  38)
 * time-stamping:                         Time-Stamping.       (line   6)
 * time-stamping usage:                   Time-Stamping Usage. (line   6)
-* timeout:                               Download Options.    (line 290)
-* timeout, connect:                      Download Options.    (line 314)
-* timeout, DNS:                          Download Options.    (line 308)
-* timeout, read:                         Download Options.    (line 319)
+* timeout:                               Download Options.    (line 285)
+* timeout, connect:                      Download Options.    (line 309)
+* timeout, DNS:                          Download Options.    (line 303)
+* timeout, read:                         Download Options.    (line 314)
 * timestamping:                          Time-Stamping.       (line   6)
 * tries:                                 Download Options.    (line  26)
-* Trust server names:                    HTTP Options.        (line 385)
+* Trust server names:                    HTTP Options.        (line 358)
 * types of files:                        Types of Files.      (line   6)
-* unlink:                                Download Options.    (line 595)
+* unlink:                                Download Options.    (line 581)
 * updating the archives:                 Time-Stamping.       (line   6)
 * URL:                                   URL Format.          (line   6)
 * URL syntax:                            URL Format.          (line   6)
 * usage, time-stamping:                  Time-Stamping Usage. (line   6)
-* user:                                  Download Options.    (line 535)
-* user-agent:                            HTTP Options.        (line 240)
+* user:                                  Download Options.    (line 530)
+* user-agent:                            HTTP Options.        (line 218)
 * various:                               Various.             (line   6)
 * verbose:                               Logging and Input File Options.
                                                               (line  32)
-* wait:                                  Download Options.    (line 350)
-* wait, random:                          Download Options.    (line 373)
-* waiting between retries:               Download Options.    (line 364)
+* wait:                                  Download Options.    (line 345)
+* wait, random:                          Download Options.    (line 368)
+* waiting between retries:               Download Options.    (line 359)
 * WARC:                                  HTTPS (SSL/TLS) Options.
                                                               (line 229)
 * web site:                              Web Site.            (line   6)
-* Wget as spider:                        Download Options.    (line 279)
+* Wget as spider:                        Download Options.    (line 274)
 * wgetrc:                                Startup File.        (line   6)
 * wgetrc commands:                       Wgetrc Commands.     (line   6)
 * wgetrc location:                       Wgetrc Location.     (line   6)
 * wgetrc syntax:                         Wgetrc Syntax.       (line   6)
 * wildcards, accept:                     Types of Files.      (line  15)
 * wildcards, reject:                     Types of Files.      (line  39)
-* Windows file names:                    Download Options.    (line 433)
+* Windows file names:                    Download Options.    (line 428)
 
 
 
 Tag Table:
-Node: Top744
-Node: Overview2072
-Node: Invoking5764
-Node: URL Format6624
-Ref: URL Format-Footnote-19303
-Node: Option Syntax9409
-Node: Basic Startup Options12187
-Node: Logging and Input File Options13045
-Node: Download Options18429
-Node: Directory Options47995
-Node: HTTP Options50846
-Node: HTTPS (SSL/TLS) Options71353
-Node: FTP Options83886
-Node: Recursive Retrieval Options90948
-Node: Recursive Accept/Reject Options100205
-Node: Exit Status104410
-Node: Recursive Download105445
-Node: Following Links108684
-Node: Spanning Hosts109650
-Node: Types of Files111919
-Node: Directory-Based Limits116813
-Node: Relative Links120080
-Node: FTP Links120930
-Node: Time-Stamping121821
-Node: Time-Stamping Usage123493
-Node: HTTP Time-Stamping Internals125365
-Ref: HTTP Time-Stamping Internals-Footnote-1126713
-Node: FTP Time-Stamping Internals126916
-Node: Startup File128403
-Node: Wgetrc Location129343
-Node: Wgetrc Syntax130197
-Node: Wgetrc Commands130962
-Node: Sample Wgetrc147555
-Node: Examples153583
-Node: Simple Usage153944
-Node: Advanced Usage155393
-Node: Very Advanced Usage159209
-Node: Various160753
-Node: Proxies161462
-Node: Distribution164419
-Node: Web Site164759
-Node: Mailing Lists165059
-Node: Internet Relay Chat166796
-Node: Reporting Bugs167091
-Node: Portability169660
-Node: Signals171307
-Node: Appendices172014
-Node: Robot Exclusion172362
-Node: Security Considerations176224
-Node: Contributors177434
-Node: Copying this manual183164
-Node: GNU Free Documentation License183404
-Node: Concept Index208756
+Node: Top823
+Node: Overview2230
+Node: Invoking5787
+Node: URL Format6771
+Ref: URL Format-Footnote-19450
+Node: Option Syntax9556
+Node: Basic Startup Options12334
+Node: Logging and Input File Options13192
+Node: Download Options17684
+Node: Directory Options46591
+Node: HTTP Options49442
+Node: HTTPS (SSL/TLS) Options67713
+Node: FTP Options80246
+Node: Recursive Retrieval Options87308
+Node: Recursive Accept/Reject Options96565
+Node: Exit Status100770
+Node: Recursive Download101805
+Node: Following Links105044
+Node: Spanning Hosts106010
+Node: Types of Files108279
+Node: Directory-Based Limits113173
+Node: Relative Links116440
+Node: FTP Links117290
+Node: Time-Stamping118181
+Node: Time-Stamping Usage119866
+Node: HTTP Time-Stamping Internals121738
+Ref: HTTP Time-Stamping Internals-Footnote-1123086
+Node: FTP Time-Stamping Internals123289
+Node: Startup File124776
+Node: Wgetrc Location125716
+Node: Wgetrc Syntax126570
+Node: Wgetrc Commands127335
+Node: Sample Wgetrc143654
+Node: Examples149682
+Node: Simple Usage150043
+Node: Advanced Usage151492
+Node: Very Advanced Usage155308
+Node: Various156852
+Node: Proxies157561
+Node: Distribution160518
+Node: Web Site160858
+Node: Mailing Lists161158
+Node: Internet Relay Chat162895
+Node: Reporting Bugs163190
+Node: Portability165759
+Node: Signals167406
+Node: Appendices168113
+Node: Robot Exclusion168461
+Node: Security Considerations172336
+Node: Contributors173546
+Node: Copying this manual179276
+Node: GNU Free Documentation License179516
+Node: Concept Index204870
 
 End Tag Table
 

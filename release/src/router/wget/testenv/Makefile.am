@@ -1,5 +1,5 @@
 # Makefile for `wget' utility
-# Copyright (C) 2013, 2015, 2018 Free Software Foundation, Inc.
+# Copyright (C) 2013, 2015 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,38 +27,8 @@
 
 
 if METALINK_IS_ENABLED
-  METALINK_TESTS = Test-metalink-http.py            \
-    Test-metalink-http-quoted.py                    \
-    Test-metalink-http-baddigest.py                 \
-    Test-metalink-http-xml.py                       \
-    Test-metalink-http-xml-trust.py                 \
-    Test-metalink-http-xml-trust-name.py            \
-    Test-metalink-http-xml-type.py                  \
-    Test-metalink-http-xml-type-trust.py            \
-    Test-metalink-http-xml-type-content.py          \
-    Test-metalink-http-xml-type-trust-content.py    \
-    Test-metalink-xml.py                            \
-    Test-metalink-xml-continue.py                   \
-    Test-metalink-xml-relpath.py                    \
-    Test-metalink-xml-abspath.py                    \
-    Test-metalink-xml-homepath.py                   \
-    Test-metalink-xml-trust.py                      \
-    Test-metalink-xml-relpath-trust.py              \
-    Test-metalink-xml-abspath-trust.py              \
-    Test-metalink-xml-homepath-trust.py             \
-    Test-metalink-xml-prefix.py                     \
-    Test-metalink-xml-relprefix.py                  \
-    Test-metalink-xml-absprefix.py                  \
-    Test-metalink-xml-homeprefix.py                 \
-    Test-metalink-xml-prefix-trust.py               \
-    Test-metalink-xml-relprefix-trust.py            \
-    Test-metalink-xml-absprefix-trust.py            \
-    Test-metalink-xml-homeprefix-trust.py           \
-    Test-metalink-xml-emptyprefix-trust.py          \
-    Test-metalink-xml-size.py                       \
-    Test-metalink-xml-nohash.py                     \
-    Test-metalink-xml-nourls.py                     \
-    Test-metalink-xml-urlbreak.py
+  METALINK_TESTS = Test-metalink-xml.py             \
+    Test-metalink-http.py
 else
   METALINK_TESTS =
 endif
@@ -72,14 +42,8 @@ if WITH_SSL
 endif
 
 if HAVE_PYTHON3
-  TESTS = Test-504.py                               \
-    Test-416.py                                     \
-    Test-auth-basic-fail.py                         \
+  TESTS = Test-auth-basic-fail.py                   \
     Test-auth-basic.py                              \
-    Test-auth-basic-netrc.py                        \
-    Test-auth-basic-netrc-user-given.py             \
-    Test-auth-basic-netrc-pass-given.py             \
-    Test-auth-basic-no-netrc-fail.py                \
     Test-auth-both.py                               \
     Test-auth-digest.py                             \
     Test-auth-no-challenge.py                       \
@@ -87,7 +51,6 @@ if HAVE_PYTHON3
     Test-auth-retcode.py                            \
     Test-auth-with-content-disposition.py           \
     Test-c-full.py                                  \
-    Test-condget.py                                 \
     Test-Content-disposition-2.py                   \
     Test-Content-disposition.py                     \
     Test--convert-links--content-on-error.py        \
@@ -96,26 +59,24 @@ if HAVE_PYTHON3
     Test-cookie-expires.py                          \
     Test-cookie.py                                  \
     Test-Head.py                                    \
-    Test-hsts.py                                    \
     Test--https.py                                  \
     Test--https-crl.py                              \
     Test-missing-scheme-retval.py                   \
-    Test-O.py                                       \
     Test-pinnedpubkey-der-https.py                  \
     Test-pinnedpubkey-der-no-check-https.py         \
     Test-pinnedpubkey-hash-https.py                 \
     Test-pinnedpubkey-hash-no-check-fail-https.py   \
     Test-pinnedpubkey-pem-fail-https.py             \
     Test-pinnedpubkey-pem-https.py                  \
+    Test-hsts.py                                    \
+    Test-O.py                                       \
     Test-Post.py                                    \
-    Test-recursive-basic.py                         \
-    Test-recursive-include.py                       \
-    Test-recursive-redirect.py                      \
-    Test-redirect.py                                \
-    Test-redirect-crash.py                          \
-    Test--rejected-log.py                           \
-    Test-reserved-chars.py                          \
+    Test-504.py                                     \
     Test--spider-r.py                               \
+    Test--rejected-log.py                           \
+    Test-redirect-crash.py                          \
+    Test-reserved-chars.py                          \
+    Test-condget.py                                 \
     $(METALINK_TESTS)
 
 endif

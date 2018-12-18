@@ -1,6 +1,6 @@
 /* Collect URLs from CSS source.
-   Copyright (C) 1998, 2000-2003, 2009-2011, 2014-2015, 2018 Free
-   Software Foundation, Inc.
+   Copyright (C) 1998, 2000, 2001, 2002, 2003, 2009, 2010, 2011, 2014,
+   2015 Free Software Foundation, Inc.
 
 This file is part of GNU Wget.
 
@@ -59,7 +59,6 @@ extern char *yytext;
 extern int yyleng;
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern YY_BUFFER_STATE yy_scan_bytes (const char *bytes,int len  );
-extern void yy_delete_buffer (YY_BUFFER_STATE  b);
 extern int yylex (void);
 
 /*
@@ -110,10 +109,9 @@ get_urls_css (struct map_context *ctx, int offset, int buf_length)
   int buffer_pos = 0;
   int pos, length;
   char *uri;
-  YY_BUFFER_STATE b;
 
   /* tell flex to scan from this buffer */
-  b = yy_scan_bytes (ctx->text + offset, buf_length);
+  yy_scan_bytes (ctx->text + offset, buf_length);
 
   while((token = yylex()) != CSSEOF)
     {
@@ -190,9 +188,6 @@ get_urls_css (struct map_context *ctx, int offset, int buf_length)
         }
       buffer_pos += yyleng;
     }
-
-  yy_delete_buffer(b);
-
   DEBUGP (("\n"));
 }
 

@@ -1,5 +1,7 @@
 /* Parsing FTP `ls' output.
-   Copyright (C) 1996-2011, 2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
+   2005, 2006, 2007, 2008, 2009, 2010, 2011, 2015 Free Software
+   Foundation, Inc.
 
 This file is part of GNU Wget.
 
@@ -165,12 +167,12 @@ ftp_parse_unix_ls (const char *file, int ignore_perms)
               /*cur.perms = 1023;*/     /* #### What is this?  --hniksic */
               cur.perms = 0644;
             }
-          DEBUGP (("implicit perms %0o; ", (unsigned) cur.perms));
+          DEBUGP (("implicit perms %0o; ", cur.perms));
         }
        else
          {
            cur.perms = symperms (tok + 1);
-           DEBUGP (("perms %0o; ", (unsigned) cur.perms));
+           DEBUGP (("perms %0o; ", cur.perms));
          }
 
       error = ignore = 0;       /* Erroneous and ignoring entries are
@@ -476,7 +478,6 @@ ftp_parse_winnt_ls (const char *file)
         }
       /* Now it is possible to determine the position of the first symbol in
          filename. */
-      memset(&cur, 0, sizeof (cur));
       cur.name = xstrdup(filename);
       DEBUGP (("Name: '%s'\n", cur.name));
 
@@ -930,7 +931,7 @@ ftp_parse_vms_ls (const char *file)
                     }
                 }
               cur.perms = perms;
-              DEBUGP (("Prot.  perms = %0o.\n", (unsigned) cur.perms));
+              DEBUGP (("Prot.  perms = %0o.\n", cur.perms));
             }
           else
             {

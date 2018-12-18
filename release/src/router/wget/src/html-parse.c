@@ -1,5 +1,6 @@
 /* HTML parser for Wget.
-   Copyright (C) 1998-2011, 2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006,
+   2007, 2008, 2009, 2010, 2011, 2015 Free Software Foundation, Inc.
 
 This file is part of GNU Wget.
 
@@ -175,8 +176,8 @@ struct pool {
   P->orig_size = P->size;                                       \
 } while (0)
 
-/* Grow the pool to accommodate at least SIZE new bytes.  If the pool
-   already has room to accommodate SIZE bytes of data, this is a no-op.  */
+/* Grow the pool to accomodate at least SIZE new bytes.  If the pool
+   already has room to accomodate SIZE bytes of data, this is a no-op.  */
 
 #define POOL_GROW(p, increase)                                  \
   GROW_ARRAY ((p)->contents, (p)->size, (p)->tail + (increase), \
@@ -796,6 +797,14 @@ name_allowed (const struct hash_table *ht, const char *b, const char *e)
 
 #define SKIP_WS(p) do {                         \
   while (c_isspace (*p)) {                        \
+    ADVANCE (p);                                \
+  }                                             \
+} while (0)
+
+/* Skip non-whitespace, if any. */
+
+#define SKIP_NON_WS(p) do {                     \
+  while (!c_isspace (*p)) {                       \
     ADVANCE (p);                                \
   }                                             \
 } while (0)

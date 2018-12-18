@@ -24,11 +24,6 @@ class ExpectedFiles:
         snapshot = {}
         for parent, dirs, files in os.walk('.'):
             for name in files:
-                # pubring.kbx, dirmngr.conf, gpg.conf will be created by libgpgme if $HOME doesn't contain the .gnupg directory.
-                # setting $HOME to CWD (in base_test.py) breaks two Metalink tests, so we skip this file here.
-                if name in [ 'pubring.kbx', 'dirmngr.conf', 'gpg.conf' ]:
-                    continue
-
                 f = {'content': ''}
                 file_path = os.path.join(parent, name)
                 with open(file_path) as fp:

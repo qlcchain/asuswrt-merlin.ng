@@ -1,5 +1,6 @@
 /* NTLM code.
-   Copyright (C) 2005-2011, 2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2015 Free
+   Software Foundation, Inc.
    Contributed by Daniel Stenberg.
 
 This file is part of GNU Wget.
@@ -121,7 +122,7 @@ ntlm_input (struct ntlmdata *ntlm, const char *header)
 
       DEBUGP (("Received a type-2 NTLM message.\n"));
 
-      size = wget_base64_decode (header, buffer, strlen (header));
+      size = base64_decode (header, buffer);
       if (size < 0)
         return false;           /* malformed base64 from server */
 
@@ -410,7 +411,7 @@ ntlm_output (struct ntlmdata *ntlm, const char *user, const char *passwd,
     size = 32 + hostlen + domlen;
 
     base64 = (char *) alloca (BASE64_LENGTH (size) + 1);
-    wget_base64_encode (ntlmbuf, size, base64);
+    base64_encode (ntlmbuf, size, base64);
 
     output = concat_strings ("NTLM ", base64, (char *) 0);
     break;
@@ -583,7 +584,7 @@ ntlm_output (struct ntlmdata *ntlm, const char *user, const char *passwd,
 
     /* convert the binary blob into base64 */
     base64 = (char *) alloca (BASE64_LENGTH (size) + 1);
-    wget_base64_encode (ntlmbuf, size, base64);
+    base64_encode (ntlmbuf, size, base64);
 
     output = concat_strings ("NTLM ", base64, (char *) 0);
 

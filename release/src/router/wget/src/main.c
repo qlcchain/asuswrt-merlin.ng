@@ -1,5 +1,7 @@
 /* Command line parsing.
-   Copyright (C) 1996-2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
+   2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015 Free
+   Software Foundation, Inc.
 
 This file is part of GNU Wget.
 
@@ -34,8 +36,7 @@ as that of the covered work.  */
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
-#include <spawn.h>
-#if defined(ENABLE_NLS) || defined(WINDOWS)
+#ifdef ENABLE_NLS
 # include <locale.h>
 #endif
 #include <assert.h>
@@ -59,7 +60,6 @@ as that of the covered work.  */
 #include "version.h"
 #include "c-strcase.h"
 #include "dirname.h"
-#include "xmemdup0.h"
 #include <getopt.h>
 #include <getpass.h>
 #include <quote.h>
@@ -72,9 +72,6 @@ as that of the covered work.  */
 #ifdef WINDOWS
 # include <io.h>
 # include <fcntl.h>
-#ifndef ENABLE_NLS
-# include <mbctype.h>
-#endif
 #endif
 
 #ifdef __VMS
@@ -133,7 +130,7 @@ redirect_output_signal (int sig)
     signal_name = "SIGUSR1";
 #endif
 
-  redirect_output (true,signal_name);
+  log_request_redirect_output (signal_name);
   progress_schedule_redirect ();
   signal (sig, redirect_output_signal);
 }
@@ -149,14 +146,6 @@ i18n_initialize (void)
   /* Set the text message domain.  */
   bindtextdomain ("wget", LOCALEDIR);
   textdomain ("wget");
-#elif defined WINDOWS
-  char MBCP[16] = "";
-  int CP;
-
-  CP = _getmbcp(); /* Consider it's different from default. */
-  if (CP > 0)
-    snprintf(MBCP, sizeof(MBCP), ".%d", CP);
-  setlocale(LC_ALL, MBCP);
 #endif /* ENABLE_NLS */
 }
 
@@ -230,8 +219,8 @@ save_hsts (void)
 
 /* Definition of command-line options. */
 
-_Noreturn static void print_help (void);
-_Noreturn static void print_version (void);
+static void _Noreturn print_help (void);
+static void _Noreturn print_version (void);
 
 #ifdef HAVE_SSL
 # define IF_SSL(x) x
@@ -284,9 +273,6 @@ static struct cmdline_option option_data[] =
     { IF_SSL ("certificate-type"), 0, OPT_VALUE, "certificatetype", -1 },
     { IF_SSL ("check-certificate"), 0, OPT_BOOLEAN, "checkcertificate", -1 },
     { "clobber", 0, OPT__CLOBBER, NULL, optional_argument },
-#ifdef HAVE_LIBZ
-    { "compression", 0, OPT_VALUE, "compression", -1 },
-#endif
     { "config", 0, OPT_VALUE, "chooseconfig", -1 },
     { "connect-timeout", 0, OPT_VALUE, "connecttimeout", -1 },
     { "continue", 'c', OPT_BOOLEAN, "continue", -1 },
@@ -335,7 +321,7 @@ static struct cmdline_option option_data[] =
     { "host-directories", 0, OPT_BOOLEAN, "addhostdir", -1 },
 #ifdef HAVE_HSTS
     { "hsts", 0, OPT_BOOLEAN, "hsts", -1},
-    { "hsts-file", 0, OPT_VALUE, "hstsfile", -1 },
+    { "hsts-file", 0, OPT_VALUE, "hsts-file", -1 },
 #endif
     { "html-extension", 'E', OPT_BOOLEAN, "adjustextension", -1 }, /* deprecated */
     { "htmlify", 0, OPT_BOOLEAN, "htmlify", -1 },
@@ -354,10 +340,9 @@ static struct cmdline_option option_data[] =
 #endif
     { "input-file", 'i', OPT_VALUE, "input", -1 },
 #ifdef HAVE_METALINK
-    { "input-metalink", 0, OPT_VALUE, "inputmetalink", -1 },
+    { "input-metalink", 0, OPT_VALUE, "input-metalink", -1 },
 #endif
     { "iri", 0, OPT_BOOLEAN, "iri", -1 },
-    { "keep-badhash", 0, OPT_BOOLEAN, "keepbadhash", -1 },
     { "keep-session-cookies", 0, OPT_BOOLEAN, "keepsessioncookies", -1 },
     { "level", 'l', OPT_VALUE, "reclevel", -1 },
     { "limit-rate", 0, OPT_VALUE, "limitrate", -1 },
@@ -366,12 +351,10 @@ static struct cmdline_option option_data[] =
     { "rejected-log", 0, OPT_VALUE, "rejectedlog", -1 },
     { "max-redirect", 0, OPT_VALUE, "maxredirect", -1 },
 #ifdef HAVE_METALINK
-    { "metalink-index", 0, OPT_VALUE, "metalinkindex", -1 },
-    { "metalink-over-http", 0, OPT_BOOLEAN, "metalinkoverhttp", -1 },
+    { "metalink-over-http", 0, OPT_BOOLEAN, "metalink-over-http", -1 },
 #endif
     { "method", 0, OPT_VALUE, "method", -1 },
     { "mirror", 'm', OPT_BOOLEAN, "mirror", -1 },
-    { "netrc", 0, OPT_BOOLEAN, "netrc", -1 },
     { "no", 'n', OPT__NO, NULL, required_argument },
     { "no-clobber", 0, OPT_BOOLEAN, "noclobber", -1 },
     { "no-config", 0, OPT_BOOLEAN, "noconfig", -1},
@@ -387,7 +370,7 @@ static struct cmdline_option option_data[] =
     { "post-file", 0, OPT_VALUE, "postfile", -1 },
     { "prefer-family", 0, OPT_VALUE, "preferfamily", -1 },
 #ifdef HAVE_METALINK
-    { "preferred-location", 0, OPT_VALUE, "preferredlocation", -1 },
+    { "preferred-location", 0, OPT_VALUE, "preferred-location", -1 },
 #endif
     { "preserve-permissions", 0, OPT_BOOLEAN, "preservepermissions", -1 },
     { IF_SSL ("private-key"), 0, OPT_VALUE, "privatekey", -1 },
@@ -417,7 +400,6 @@ static struct cmdline_option option_data[] =
     { "restrict-file-names", 0, OPT_BOOLEAN, "restrictfilenames", -1 },
     { "retr-symlinks", 0, OPT_BOOLEAN, "retrsymlinks", -1 },
     { "retry-connrefused", 0, OPT_BOOLEAN, "retryconnrefused", -1 },
-    { "retry-on-http-error", 0, OPT_VALUE, "retryonhttperror", -1 },
     { "save-cookies", 0, OPT_VALUE, "savecookies", -1 },
     { "save-headers", 0, OPT_BOOLEAN, "saveheaders", -1 },
     { IF_SSL ("secure-protocol"), 0, OPT_VALUE, "secureprotocol", -1 },
@@ -428,15 +410,15 @@ static struct cmdline_option option_data[] =
     { "strict-comments", 0, OPT_BOOLEAN, "strictcomments", -1 },
     { "timeout", 'T', OPT_VALUE, "timeout", -1 },
     { "timestamping", 'N', OPT_BOOLEAN, "timestamping", -1 },
-    { "if-modified-since", 0, OPT_BOOLEAN, "ifmodifiedsince", -1 },
+    { "if-modified-since", 0, OPT_BOOLEAN, "if-modified-since", -1 },
     { "tries", 't', OPT_VALUE, "tries", -1 },
     { "unlink", 0, OPT_BOOLEAN, "unlink", -1 },
     { "trust-server-names", 0, OPT_BOOLEAN, "trustservernames", -1 },
-    { "use-askpass", 0, OPT_VALUE, "useaskpass", -1},
     { "use-server-timestamps", 0, OPT_BOOLEAN, "useservertimestamps", -1 },
     { "user", 0, OPT_VALUE, "user", -1 },
     { "user-agent", 'U', OPT_VALUE, "useragent", -1 },
     { "verbose", 'v', OPT_BOOLEAN, "verbose", -1 },
+    { "verbose", 0, OPT_BOOLEAN, "verbose", -1 },
     { "version", 'V', OPT_FUNCALL, (void *) print_version, no_argument },
     { "wait", 'w', OPT_VALUE, "wait", -1 },
     { "waitretry", 0, OPT_VALUE, "waitretry", -1 },
@@ -453,9 +435,6 @@ static struct cmdline_option option_data[] =
     { "warc-tempdir", 0, OPT_VALUE, "warctempdir", -1 },
 #ifdef USE_WATT32
     { "wdebug", 0, OPT_BOOLEAN, "wdebug", -1 },
-#endif
-#ifdef ENABLE_XATTR
-    { "xattr", 0, OPT_BOOLEAN, "xattr", -1 },
 #endif
   };
 
@@ -568,7 +547,7 @@ print_usage (int error)
 
 /* Print the help message, describing all the available options.  If
    you add an option, be sure to update this list.  */
-_Noreturn static void
+static void _Noreturn
 print_help (void)
 {
   /* We split the help text this way to ease translation of individual
@@ -642,8 +621,6 @@ Download:\n"),
   -nc, --no-clobber                skip downloads that would download to\n\
                                      existing files (overwriting them)\n"),
     N_("\
-       --no-netrc                  don't try to obtain credentials from .netrc\n"),
-    N_("\
   -c,  --continue                  resume getting a partially-downloaded file\n"),
     N_("\
        --start-pos=OFFSET          start downloading from zero-based position OFFSET\n"),
@@ -714,11 +691,6 @@ Download:\n"),
     N_("\
        --ask-password              prompt for passwords\n"),
     N_("\
-       --use-askpass=COMMAND       specify credential handler for requesting \n\
-                                     username and password.  If no COMMAND is \n\
-                                     specified the WGET_ASKPASS or the SSH_ASKPASS \n\
-                                     environment variable is used.\n"),
-    N_("\
        --no-iri                    turn off IRI support\n"),
     N_("\
        --local-encoding=ENC        use ENC as the local encoding for IRIs\n"),
@@ -728,17 +700,9 @@ Download:\n"),
        --unlink                    remove file before clobber\n"),
 #ifdef HAVE_METALINK
     N_("\
-       --keep-badhash              keep files with checksum mismatch (append .badhash)\n"),
-    N_("\
-       --metalink-index=NUMBER     Metalink application/metalink4+xml metaurl ordinal NUMBER\n"),
-    N_("\
        --metalink-over-http        use Metalink metadata from HTTP response headers\n"),
     N_("\
        --preferred-location        preferred location for Metalink resources\n"),
-#endif
-#ifdef ENABLE_XATTR
-    N_("\
-       --no-xattr                  turn off storage of metadata in extended file attributes\n"),
 #endif
     "\n",
 
@@ -775,10 +739,6 @@ HTTP options:\n"),
        --ignore-length             ignore 'Content-Length' header field\n"),
     N_("\
        --header=STRING             insert STRING among the headers\n"),
-#ifdef HAVE_LIBZ
-    N_("\
-       --compression=TYPE          choose compression, one of auto, gzip and none. (default: none)\n"),
-#endif
     N_("\
        --max-redirect              maximum redirections allowed per page\n"),
     N_("\
@@ -827,7 +787,7 @@ HTTP options:\n"),
 HTTPS (SSL/TLS) options:\n"),
     N_("\
        --secure-protocol=PR        choose secure protocol, one of auto, SSLv2,\n\
-                                     SSLv3, TLSv1, TLSv1_1, TLSv1_2 and PFS\n"),
+                                     SSLv3, TLSv1 and PFS\n"),
     N_("\
        --https-only                only follow secure HTTPS links\n"),
     N_("\
@@ -849,7 +809,7 @@ HTTPS (SSL/TLS) options:\n"),
     N_("\
        --pinnedpubkey=FILE/HASHES  Public key (PEM/DER) file, or any number\n\
                                    of base64 encoded sha256 hashes preceded by\n\
-                                   \'sha256//\' and separated by \';\', to verify\n\
+                                   \'sha256//\' and seperated by \';\', to verify\n\
                                    peer against\n"),
 #if defined(HAVE_LIBSSL) || defined(HAVE_LIBSSL32)
     N_("\
@@ -1059,103 +1019,6 @@ prompt_for_password (void)
   return getpass("");
 }
 
-
-/* Execute external application opt.use_askpass */
-static void
-run_use_askpass (char *question, char **answer)
-{
-  char tmp[1024];
-  pid_t pid;
-  int status;
-  int com[2];
-  ssize_t bytes = 0;
-  char *argv[3], *p;
-  posix_spawn_file_actions_t fa;
-
-  if (pipe (com) == -1)
-    {
-      fprintf (stderr, _("Cannot create pipe\n"));
-      exit (WGET_EXIT_GENERIC_ERROR);
-    }
-
-  status = posix_spawn_file_actions_init (&fa);
-  if (status)
-    {
-      fprintf (stderr,
-              _("Error initializing spawn file actions for use-askpass: %d\n"),
-              status);
-      exit (WGET_EXIT_GENERIC_ERROR);
-    }
-
-  status = posix_spawn_file_actions_adddup2 (&fa, com[1], STDOUT_FILENO);
-  if (status)
-    {
-      fprintf (stderr,
-              _("Error setting spawn file actions for use-askpass: %d\n"),
-              status);
-      exit (WGET_EXIT_GENERIC_ERROR);
-    }
-
-  /* C89 initializer lists must be computable at load time,
-   * thus this explicit initialization. */
-  argv[0] = opt.use_askpass;
-  argv[1] = question;
-  argv[2] = NULL;
-
-  status = posix_spawnp (&pid, opt.use_askpass, &fa, NULL, argv, environ);
-  if (status)
-    {
-      fprintf (stderr, "Error spawning %s: %d\n", opt.use_askpass, status);
-      exit (WGET_EXIT_GENERIC_ERROR);
-    }
-
-  /* Parent process reads from child. */
-  close (com[1]);
-  bytes = read (com[0], tmp, sizeof (tmp) - 1);
-  if (bytes <= 0)
-    {
-      fprintf (stderr,
-              _("Error reading response from command \"%s %s\": %s\n"),
-              opt.use_askpass, question, strerror (errno));
-      exit (WGET_EXIT_GENERIC_ERROR);
-    }
-
-  /* Make sure there is a trailing 0 */
-  tmp[bytes] = '\0';
-
-  /* Remove a possible new line */
-  if ((p = strpbrk (tmp, "\r\n")))
-    bytes = p - tmp;
-
-  *answer = xmemdup0 (tmp, bytes);
-}
-
-/* set the user name and password*/
-static void
-use_askpass (struct url *u)
-{
-  static char question[1024];
-
-  if (u->user == NULL || u->user[0] == '\0')
-    {
-      snprintf (question, sizeof (question),  _("Username for '%s%s': "),
-                scheme_leading_string(u->scheme), u->host);
-      /* Prompt for username */
-      run_use_askpass (question, &u->user);
-      if (opt.recursive)
-        opt.user = xstrdup (u->user);
-    }
-
-  if (u->passwd == NULL || u->passwd[0] == '\0')
-    {
-      snprintf(question, sizeof (question), _("Password for '%s%s@%s': "),
-               scheme_leading_string (u->scheme), u->user, u->host);
-      /* Prompt for password */
-      run_use_askpass (question, &u->passwd);
-      if (opt.recursive)
-        opt.passwd = xstrdup (u->passwd);
-    }
-}
 /* Function that prints the line argument while limiting it
    to at most line_length. prefix is printed on the first line
    and an appropriate number of spaces are added on subsequent
@@ -1217,7 +1080,7 @@ format_and_print_line (const char *prefix, const char *line,
   return 0;
 }
 
-_Noreturn static void
+static void _Noreturn
 print_version (void)
 {
   const char *wgetrc_title  = _("Wgetrc: ");
@@ -1400,10 +1263,10 @@ main (int argc, char **argv)
             }
           else if (strcmp (config_opt->long_name, "config") == 0)
             {
-              file_stats_t flstats;
+              bool userrc_ret = true;
+              userrc_ret &= run_wgetrc (optarg);
               use_userconfig = true;
-              memset(&flstats, 0, sizeof(flstats));
-              if (file_exists_p(optarg, &flstats) && run_wgetrc (optarg, &flstats))
+              if (userrc_ret)
                 break;
               else
                 {
@@ -1476,8 +1339,7 @@ main (int argc, char **argv)
           append_to_log = true;
           break;
         case OPT__EXECUTE:
-          if (optarg) /* check silences static analyzer */
-            run_command (optarg);
+          run_command (optarg);
           break;
         case OPT__NO:
           {
@@ -1537,9 +1399,6 @@ main (int argc, char **argv)
     }
 
   nurl = argc - optind;
-
-  /* Initialize logging ASAP.  */
-  log_init (opt.lfilename, append_to_log);
 
   /* If we do not have Debug support compiled in AND Wget is invoked with the
    * --debug switch, instead of failing, we silently turn it into a no-op. For
@@ -1642,12 +1501,12 @@ WARNING: timestamping does nothing in combination with -O. See the manual\n\
 for details.\n\n"));
           opt.timestamping = false;
         }
-      if (opt.noclobber && file_exists_p(opt.output_document, NULL))
+      if (opt.noclobber && file_exists_p(opt.output_document))
            {
               /* Check if output file exists; if it does, exit. */
               logprintf (LOG_VERBOSE,
-                         _("File %s already there; not retrieving.\n"),
-                         quote (opt.output_document));
+                         _("File `%s' already there; not retrieving.\n"),
+                         opt.output_document);
               exit (WGET_EXIT_GENERIC_ERROR);
            }
     }
@@ -1693,26 +1552,6 @@ for details.\n\n"));
           opt.progress_type = xstrdup ("dot");
         }
     }
-
-#ifdef HAVE_LIBZ
-  if (opt.always_rest || opt.start_pos >= 0)
-    {
-      if (opt.compression == compression_auto)
-        {
-          /* Compression does not work with --continue or --start-pos.
-             Since compression was not explicitly set, it will be disabled. */
-          opt.compression = compression_none;
-        }
-      else if (opt.compression != compression_none)
-        {
-          fprintf (stderr,
-                   _("Compression does not work with --continue or"
-                     " --start-pos, they will be disabled.\n"));
-          opt.always_rest = false;
-          opt.start_pos = -1;
-        }
-    }
-#endif
 
   if (opt.ask_passwd && opt.passwd)
     {
@@ -1784,7 +1623,7 @@ for details.\n\n"));
       else if (opt.method)
         {
           fprintf (stderr, _("You cannot use --post-data or --post-file along with --method. "
-                             "--method expects data through --body-data and --body-file options\n"));
+                             "--method expects data through --body-data and --body-file options"));
           exit (WGET_EXIT_GENERIC_ERROR);
         }
     }
@@ -1863,16 +1702,6 @@ for details.\n\n"));
         exit (WGET_EXIT_GENERIC_ERROR);
     }
 
-  if (opt.use_askpass)
-  {
-    if (opt.use_askpass[0] == '\0')
-      {
-        fprintf (stderr,
-                 _("use-askpass requires a string or either environment variable WGET_ASKPASS or SSH_ASKPASS to be set.\n"));
-        exit (WGET_EXIT_GENERIC_ERROR);
-      }
-  }
-
 #ifdef USE_WATT32
   if (opt.wdebug)
      dbug_init();
@@ -1904,6 +1733,9 @@ for details.\n\n"));
     }
   url[i] = NULL;
 
+  /* Initialize logging.  */
+  log_init (opt.lfilename, append_to_log);
+
   /* Open WARC file. */
   if (opt.warc_filename != 0)
     warc_init ();
@@ -1932,7 +1764,7 @@ for details.\n\n"));
         }
       else
         {
-          struct stat st;
+          struct_fstat st;
 
 #ifdef __VMS
 /* Common fopen() optional arguments:
@@ -2088,10 +1920,6 @@ only if outputting to a regular file.\n"));
         }
       else
         {
-          /* Request credentials if use_askpass is set. */
-          if (opt.use_askpass)
-            use_askpass (url_parsed);
-
           if ((opt.recursive || opt.page_requisites)
               && ((url_scheme (*t) != SCHEME_FTP
 #ifdef HAVE_SSL
@@ -2120,7 +1948,7 @@ only if outputting to a regular file.\n"));
                             &dt, opt.recursive, iri, true);
             }
 
-          if (opt.delete_after && filename != NULL && file_exists_p (filename, NULL))
+          if (opt.delete_after && filename != NULL && file_exists_p (filename))
             {
               DEBUGP (("Removing file due to --delete-after in main():\n"));
               logprintf (LOG_VERBOSE, _("Removing %s.\n"), filename);

@@ -1,5 +1,5 @@
 /* Definitions for POSIX spawn interface.
-   Copyright (C) 2000, 2003-2004, 2008-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000, 2003-2004, 2008-2015 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    This program is free software: you can redistribute it and/or modify
@@ -13,7 +13,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #ifndef _@GUARD_PREFIX@_SPAWN_H
 
@@ -142,8 +142,7 @@ typedef struct
 # endif
 #endif
 /* A GNU extension.  Use the next free bit position.  */
-#ifndef POSIX_SPAWN_USEVFORK
-# define POSIX_SPAWN_USEVFORK \
+#define POSIX_SPAWN_USEVFORK \
   ((POSIX_SPAWN_RESETIDS | (POSIX_SPAWN_RESETIDS - 1)                     \
     | POSIX_SPAWN_SETPGROUP | (POSIX_SPAWN_SETPGROUP - 1)                 \
     | POSIX_SPAWN_SETSIGDEF | (POSIX_SPAWN_SETSIGDEF - 1)                 \
@@ -153,7 +152,6 @@ typedef struct
     | POSIX_SPAWN_SETSCHEDULER                                            \
     | (POSIX_SPAWN_SETSCHEDULER > 0 ? POSIX_SPAWN_SETSCHEDULER - 1 : 0))  \
    + 1)
-#endif
 #if !GNULIB_defined_verify_POSIX_SPAWN_USEVFORK_no_overlap
 typedef int verify_POSIX_SPAWN_USEVFORK_no_overlap
             [(((POSIX_SPAWN_RESETIDS | POSIX_SPAWN_SETPGROUP

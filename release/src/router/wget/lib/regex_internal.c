@@ -1,5 +1,5 @@
 /* Extended regular expression matching and search library.
-   Copyright (C) 2002-2018 Free Software Foundation, Inc.
+   Copyright (C) 2002-2015 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Isamu Hasegawa <isamu@yamato.ibm.com>.
 
@@ -15,19 +15,19 @@
 
    You should have received a copy of the GNU General Public
    License along with the GNU C Library; if not, see
-   <https://www.gnu.org/licenses/>.  */
+   <http://www.gnu.org/licenses/>.  */
 
 static void re_string_construct_common (const char *str, Idx len,
 					re_string_t *pstr,
 					RE_TRANSLATE_TYPE trans, bool icase,
-					const re_dfa_t *dfa);
+					const re_dfa_t *dfa) internal_function;
 static re_dfastate_t *create_ci_newstate (const re_dfa_t *dfa,
 					  const re_node_set *nodes,
-					  re_hashval_t hash);
+					  re_hashval_t hash) internal_function;
 static re_dfastate_t *create_cd_newstate (const re_dfa_t *dfa,
 					  const re_node_set *nodes,
 					  unsigned int context,
-					  re_hashval_t hash);
+					  re_hashval_t hash) internal_function;
 
 /* Functions for string operation.  */
 
@@ -35,7 +35,7 @@ static re_dfastate_t *create_cd_newstate (const re_dfa_t *dfa,
    re_string_reconstruct before using the object.  */
 
 static reg_errcode_t
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 re_string_allocate (re_string_t *pstr, const char *str, Idx len, Idx init_len,
 		    RE_TRANSLATE_TYPE trans, bool icase, const re_dfa_t *dfa)
 {
@@ -63,7 +63,7 @@ re_string_allocate (re_string_t *pstr, const char *str, Idx len, Idx init_len,
 /* This function allocate the buffers, and initialize them.  */
 
 static reg_errcode_t
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 re_string_construct (re_string_t *pstr, const char *str, Idx len,
 		     RE_TRANSLATE_TYPE trans, bool icase, const re_dfa_t *dfa)
 {
@@ -126,7 +126,7 @@ re_string_construct (re_string_t *pstr, const char *str, Idx len,
 /* Helper functions for re_string_allocate, and re_string_construct.  */
 
 static reg_errcode_t
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 re_string_realloc_buffers (re_string_t *pstr, Idx new_buf_len)
 {
 #ifdef RE_ENABLE_I18N
@@ -166,6 +166,7 @@ re_string_realloc_buffers (re_string_t *pstr, Idx new_buf_len)
 
 
 static void
+internal_function
 re_string_construct_common (const char *str, Idx len, re_string_t *pstr,
 			    RE_TRANSLATE_TYPE trans, bool icase,
 			    const re_dfa_t *dfa)
@@ -197,6 +198,7 @@ re_string_construct_common (const char *str, Idx len, re_string_t *pstr,
    built and starts from PSTR->VALID_LEN.  */
 
 static void
+internal_function
 build_wcs_buffer (re_string_t *pstr)
 {
 #ifdef _LIBC
@@ -265,7 +267,7 @@ build_wcs_buffer (re_string_t *pstr)
    but for REG_ICASE.  */
 
 static reg_errcode_t
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 build_wcs_upper_buffer (re_string_t *pstr)
 {
   mbstate_t prev_st;
@@ -482,6 +484,7 @@ build_wcs_upper_buffer (re_string_t *pstr)
    Return the index.  */
 
 static Idx
+internal_function
 re_string_skip_chars (re_string_t *pstr, Idx new_raw_idx, wint_t *last_wc)
 {
   mbstate_t prev_st;
@@ -522,6 +525,7 @@ re_string_skip_chars (re_string_t *pstr, Idx new_raw_idx, wint_t *last_wc)
    This function is used in case of REG_ICASE.  */
 
 static void
+internal_function
 build_upper_buffer (re_string_t *pstr)
 {
   Idx char_idx, end_idx;
@@ -541,6 +545,7 @@ build_upper_buffer (re_string_t *pstr)
 /* Apply TRANS to the buffer in PSTR.  */
 
 static void
+internal_function
 re_string_translate_buffer (re_string_t *pstr)
 {
   Idx buf_idx, end_idx;
@@ -561,7 +566,7 @@ re_string_translate_buffer (re_string_t *pstr)
    convert to upper case in case of REG_ICASE, apply translation.  */
 
 static reg_errcode_t
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 re_string_reconstruct (re_string_t *pstr, Idx idx, int eflags)
 {
   Idx offset;
@@ -824,7 +829,7 @@ re_string_reconstruct (re_string_t *pstr, Idx idx, int eflags)
 }
 
 static unsigned char
-__attribute__ ((pure))
+internal_function __attribute__ ((pure))
 re_string_peek_byte_case (const re_string_t *pstr, Idx idx)
 {
   int ch;
@@ -861,6 +866,7 @@ re_string_peek_byte_case (const re_string_t *pstr, Idx idx)
 }
 
 static unsigned char
+internal_function
 re_string_fetch_byte_case (re_string_t *pstr)
 {
   if (BE (!pstr->mbs_allocated, 1))
@@ -898,6 +904,7 @@ re_string_fetch_byte_case (re_string_t *pstr)
 }
 
 static void
+internal_function
 re_string_destruct (re_string_t *pstr)
 {
 #ifdef RE_ENABLE_I18N
@@ -911,10 +918,11 @@ re_string_destruct (re_string_t *pstr)
 /* Return the context at IDX in INPUT.  */
 
 static unsigned int
+internal_function
 re_string_context_at (const re_string_t *input, Idx idx, int eflags)
 {
   int c;
-  if (BE (idx < 0, 0))
+  if (BE (! REG_VALID_INDEX (idx), 0))
     /* In this case, we use the value stored in input->tip_context,
        since we can't know the character in input->mbs[-1] here.  */
     return input->tip_context;
@@ -930,10 +938,10 @@ re_string_context_at (const re_string_t *input, Idx idx, int eflags)
 	{
 #if defined DEBUG && DEBUG
 	  /* It must not happen.  */
-	  assert (wc_idx >= 0);
+	  assert (REG_VALID_INDEX (wc_idx));
 #endif
 	  --wc_idx;
-	  if (wc_idx < 0)
+	  if (! REG_VALID_INDEX (wc_idx))
 	    return input->tip_context;
 	}
       wc = input->wcs[wc_idx];
@@ -955,7 +963,7 @@ re_string_context_at (const re_string_t *input, Idx idx, int eflags)
 /* Functions for set operation.  */
 
 static reg_errcode_t
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 re_node_set_alloc (re_node_set *set, Idx size)
 {
   set->alloc = size;
@@ -967,7 +975,7 @@ re_node_set_alloc (re_node_set *set, Idx size)
 }
 
 static reg_errcode_t
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 re_node_set_init_1 (re_node_set *set, Idx elem)
 {
   set->alloc = 1;
@@ -983,7 +991,7 @@ re_node_set_init_1 (re_node_set *set, Idx elem)
 }
 
 static reg_errcode_t
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 re_node_set_init_2 (re_node_set *set, Idx elem1, Idx elem2)
 {
   set->alloc = 2;
@@ -1013,7 +1021,7 @@ re_node_set_init_2 (re_node_set *set, Idx elem1, Idx elem2)
 }
 
 static reg_errcode_t
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 re_node_set_init_copy (re_node_set *dest, const re_node_set *src)
 {
   dest->nelem = src->nelem;
@@ -1038,7 +1046,7 @@ re_node_set_init_copy (re_node_set *dest, const re_node_set *src)
    Note: We assume dest->elems is NULL, when dest->alloc is 0.  */
 
 static reg_errcode_t
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 re_node_set_add_intersect (re_node_set *dest, const re_node_set *src1,
 			   const re_node_set *src2)
 {
@@ -1069,25 +1077,25 @@ re_node_set_add_intersect (re_node_set *dest, const re_node_set *src1,
       if (src1->elems[i1] == src2->elems[i2])
 	{
 	  /* Try to find the item in DEST.  Maybe we could binary search?  */
-	  while (id >= 0 && dest->elems[id] > src1->elems[i1])
+	  while (REG_VALID_INDEX (id) && dest->elems[id] > src1->elems[i1])
 	    --id;
 
-	  if (id < 0 || dest->elems[id] != src1->elems[i1])
+          if (! REG_VALID_INDEX (id) || dest->elems[id] != src1->elems[i1])
             dest->elems[--sbase] = src1->elems[i1];
 
-	  if (--i1 < 0 || --i2 < 0)
+	  if (! REG_VALID_INDEX (--i1) || ! REG_VALID_INDEX (--i2))
 	    break;
 	}
 
       /* Lower the highest of the two items.  */
       else if (src1->elems[i1] < src2->elems[i2])
 	{
-	  if (--i2 < 0)
+	  if (! REG_VALID_INDEX (--i2))
 	    break;
 	}
       else
 	{
-	  if (--i1 < 0)
+	  if (! REG_VALID_INDEX (--i1))
 	    break;
 	}
     }
@@ -1100,7 +1108,7 @@ re_node_set_add_intersect (re_node_set *dest, const re_node_set *src1,
      DEST elements are already in place; this is more or
      less the same loop that is in re_node_set_merge.  */
   dest->nelem += delta;
-  if (delta > 0 && id >= 0)
+  if (delta > 0 && REG_VALID_INDEX (id))
     for (;;)
       {
 	if (dest->elems[is] > dest->elems[id])
@@ -1114,7 +1122,7 @@ re_node_set_add_intersect (re_node_set *dest, const re_node_set *src1,
 	  {
 	    /* Slide from the bottom.  */
 	    dest->elems[id + delta] = dest->elems[id];
-	    if (--id < 0)
+	    if (! REG_VALID_INDEX (--id))
 	      break;
 	  }
       }
@@ -1129,7 +1137,7 @@ re_node_set_add_intersect (re_node_set *dest, const re_node_set *src1,
    DEST. Return value indicate the error code or REG_NOERROR if succeeded.  */
 
 static reg_errcode_t
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 re_node_set_init_union (re_node_set *dest, const re_node_set *src1,
 			const re_node_set *src2)
 {
@@ -1182,7 +1190,7 @@ re_node_set_init_union (re_node_set *dest, const re_node_set *src1,
    DEST. Return value indicate the error code or REG_NOERROR if succeeded.  */
 
 static reg_errcode_t
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 re_node_set_merge (re_node_set *dest, const re_node_set *src)
 {
   Idx is, id, sbase, delta;
@@ -1208,7 +1216,8 @@ re_node_set_merge (re_node_set *dest, const re_node_set *src)
   /* Copy into the top of DEST the items of SRC that are not
      found in DEST.  Maybe we could binary search in DEST?  */
   for (sbase = dest->nelem + 2 * src->nelem,
-       is = src->nelem - 1, id = dest->nelem - 1; is >= 0 && id >= 0; )
+       is = src->nelem - 1, id = dest->nelem - 1;
+       REG_VALID_INDEX (is) && REG_VALID_INDEX (id); )
     {
       if (dest->elems[id] == src->elems[is])
 	is--, id--;
@@ -1218,7 +1227,7 @@ re_node_set_merge (re_node_set *dest, const re_node_set *src)
 	--id;
     }
 
-  if (is >= 0)
+  if (REG_VALID_INDEX (is))
     {
       /* If DEST is exhausted, the remaining items of SRC must be unique.  */
       sbase -= is + 1;
@@ -1247,7 +1256,7 @@ re_node_set_merge (re_node_set *dest, const re_node_set *src)
 	{
 	  /* Slide from the bottom.  */
 	  dest->elems[id + delta] = dest->elems[id];
-	  if (--id < 0)
+	  if (! REG_VALID_INDEX (--id))
 	    {
 	      /* Copy remaining SRC elements.  */
 	      memcpy (dest->elems, dest->elems + sbase,
@@ -1265,7 +1274,7 @@ re_node_set_merge (re_node_set *dest, const re_node_set *src)
    Return true if successful.  */
 
 static bool
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 re_node_set_insert (re_node_set *set, Idx elem)
 {
   Idx idx;
@@ -1317,7 +1326,7 @@ re_node_set_insert (re_node_set *set, Idx elem)
    Return true if successful.  */
 
 static bool
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 re_node_set_insert_last (re_node_set *set, Idx elem)
 {
   /* Realloc if we need.  */
@@ -1340,13 +1349,13 @@ re_node_set_insert_last (re_node_set *set, Idx elem)
    Return true if SET1 and SET2 are equivalent.  */
 
 static bool
-__attribute__ ((pure))
+internal_function __attribute__ ((pure))
 re_node_set_compare (const re_node_set *set1, const re_node_set *set2)
 {
   Idx i;
   if (set1 == NULL || set2 == NULL || set1->nelem != set2->nelem)
     return false;
-  for (i = set1->nelem ; --i >= 0 ; )
+  for (i = set1->nelem ; REG_VALID_INDEX (--i) ; )
     if (set1->elems[i] != set2->elems[i])
       return false;
   return true;
@@ -1355,11 +1364,11 @@ re_node_set_compare (const re_node_set *set1, const re_node_set *set2)
 /* Return (idx + 1) if SET contains the element ELEM, return 0 otherwise.  */
 
 static Idx
-__attribute__ ((pure))
+internal_function __attribute__ ((pure))
 re_node_set_contains (const re_node_set *set, Idx elem)
 {
   __re_size_t idx, right, mid;
-  if (set->nelem <= 0)
+  if (! REG_VALID_NONZERO_INDEX (set->nelem))
     return 0;
 
   /* Binary search the element.  */
@@ -1377,6 +1386,7 @@ re_node_set_contains (const re_node_set *set, Idx elem)
 }
 
 static void
+internal_function
 re_node_set_remove_at (re_node_set *set, Idx idx)
 {
   if (idx < 0 || idx >= set->nelem)
@@ -1388,9 +1398,10 @@ re_node_set_remove_at (re_node_set *set, Idx idx)
 
 
 /* Add the token TOKEN to dfa->nodes, and return the index of the token.
-   Or return -1 if an error occurred.  */
+   Or return REG_MISSING if an error occurred.  */
 
 static Idx
+internal_function
 re_dfa_add_node (re_dfa_t *dfa, re_token_t token)
 {
   if (BE (dfa->nodes_len >= dfa->nodes_alloc, 0))
@@ -1405,11 +1416,11 @@ re_dfa_add_node (re_dfa_t *dfa, re_token_t token)
 					  MAX (sizeof (re_node_set),
 					       sizeof (Idx)));
       if (BE (MIN (IDX_MAX, SIZE_MAX / max_object_size) < new_nodes_alloc, 0))
-	return -1;
+	return REG_MISSING;
 
       new_nodes = re_realloc (dfa->nodes, re_token_t, new_nodes_alloc);
       if (BE (new_nodes == NULL, 0))
-	return -1;
+	return REG_MISSING;
       dfa->nodes = new_nodes;
       new_nexts = re_realloc (dfa->nexts, Idx, new_nodes_alloc);
       new_indices = re_realloc (dfa->org_indices, Idx, new_nodes_alloc);
@@ -1417,13 +1428,7 @@ re_dfa_add_node (re_dfa_t *dfa, re_token_t token)
       new_eclosures = re_realloc (dfa->eclosures, re_node_set, new_nodes_alloc);
       if (BE (new_nexts == NULL || new_indices == NULL
 	      || new_edests == NULL || new_eclosures == NULL, 0))
-	{
-	   re_free (new_nexts);
-	   re_free (new_indices);
-	   re_free (new_edests);
-	   re_free (new_eclosures);
-	   return -1;
-	}
+	return REG_MISSING;
       dfa->nexts = new_nexts;
       dfa->org_indices = new_indices;
       dfa->edests = new_edests;
@@ -1437,13 +1442,14 @@ re_dfa_add_node (re_dfa_t *dfa, re_token_t token)
     ((token.type == OP_PERIOD && dfa->mb_cur_max > 1)
      || token.type == COMPLEX_BRACKET);
 #endif
-  dfa->nexts[dfa->nodes_len] = -1;
+  dfa->nexts[dfa->nodes_len] = REG_MISSING;
   re_node_set_init_empty (dfa->edests + dfa->nodes_len);
   re_node_set_init_empty (dfa->eclosures + dfa->nodes_len);
   return dfa->nodes_len++;
 }
 
 static re_hashval_t
+internal_function
 calc_state_hash (const re_node_set *nodes, unsigned int context)
 {
   re_hashval_t hash = nodes->nelem + context;
@@ -1463,7 +1469,7 @@ calc_state_hash (const re_node_set *nodes, unsigned int context)
 	   optimization.  */
 
 static re_dfastate_t *
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 re_acquire_state (reg_errcode_t *err, const re_dfa_t *dfa,
 		  const re_node_set *nodes)
 {
@@ -1471,7 +1477,7 @@ re_acquire_state (reg_errcode_t *err, const re_dfa_t *dfa,
   re_dfastate_t *new_state;
   struct re_state_table_entry *spot;
   Idx i;
-#if defined GCC_LINT || defined lint
+#ifdef lint
   /* Suppress bogus uninitialized-variable warnings.  */
   *err = REG_NOERROR;
 #endif
@@ -1511,7 +1517,7 @@ re_acquire_state (reg_errcode_t *err, const re_dfa_t *dfa,
 	   optimization.  */
 
 static re_dfastate_t *
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 re_acquire_state_context (reg_errcode_t *err, const re_dfa_t *dfa,
 			  const re_node_set *nodes, unsigned int context)
 {
@@ -1519,7 +1525,7 @@ re_acquire_state_context (reg_errcode_t *err, const re_dfa_t *dfa,
   re_dfastate_t *new_state;
   struct re_state_table_entry *spot;
   Idx i;
-#if defined GCC_LINT || defined lint
+#ifdef lint
   /* Suppress bogus uninitialized-variable warnings.  */
   *err = REG_NOERROR;
 #endif
@@ -1607,7 +1613,7 @@ free_state (re_dfastate_t *state)
    Return the new state if succeeded, otherwise return NULL.  */
 
 static re_dfastate_t *
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 create_ci_newstate (const re_dfa_t *dfa, const re_node_set *nodes,
 		    re_hashval_t hash)
 {
@@ -1657,7 +1663,7 @@ create_ci_newstate (const re_dfa_t *dfa, const re_node_set *nodes,
    Return the new state if succeeded, otherwise return NULL.  */
 
 static re_dfastate_t *
-__attribute_warn_unused_result__
+internal_function __attribute_warn_unused_result__
 create_cd_newstate (const re_dfa_t *dfa, const re_node_set *nodes,
 		    unsigned int context, re_hashval_t hash)
 {

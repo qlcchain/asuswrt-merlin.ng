@@ -1,5 +1,6 @@
 /* SSL support via GnuTLS library.
-   Copyright (C) 2005-2012, 2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2015
+   Free Software Foundation, Inc.
 
 This file is part of GNU Wget.
 
@@ -49,7 +50,7 @@ as that of the covered work.  */
 #include "hash.h"
 #include "ssl.h"
 
-#include <fcntl.h>
+#include <sys/fcntl.h>
 
 #ifdef WIN32
 # include "w32sock.h"
@@ -497,7 +498,7 @@ _do_handshake (gnutls_session_t session, int fd, double timeout)
             {
               gnutls_alert_description_t alert = gnutls_alert_get (session);
               const char *str = gnutls_alert_get_name (alert);
-              logprintf (LOG_NOTQUIET, "GnuTLS: received alert [%u]: %s\n",
+              logprintf (LOG_NOTQUIET, "GnuTLS: received alert [%d]: %s\n",
                          alert, str ? str : "(unknown)");
             }
         }
@@ -555,6 +556,7 @@ ssl_connect_wget (int fd, const char *hostname, int *continue_session)
       xfree(sni_hostname);
     }
 
+  gnutls_set_default_priority (session);
   gnutls_credentials_set (session, GNUTLS_CRD_CERTIFICATE, credentials);
 #ifndef FD_TO_SOCKET
 # define FD_TO_SOCKET(X) (X)
@@ -569,8 +571,7 @@ ssl_connect_wget (int fd, const char *hostname, int *continue_session)
   switch (opt.secure_protocol)
     {
     case secure_protocol_auto:
-      err = gnutls_set_default_priority (session);
-      gnutls_session_enable_compatibility_mode(session);
+      err = gnutls_priority_set_direct (session, "NORMAL:%COMPAT:-VERS-SSL3.0", NULL);
       break;
 
     case secure_protocol_sslv2:
@@ -598,8 +599,7 @@ ssl_connect_wget (int fd, const char *hostname, int *continue_session)
       break;
 
     default:
-      logprintf (LOG_NOTQUIET, _("GnuTLS: unimplemented 'secure-protocol' option value %u\n"),
-                 (unsigned) opt.secure_protocol);
+      logprintf (LOG_NOTQUIET, _("GnuTLS: unimplemented 'secure-protocol' option value %d\n"), opt.secure_protocol);
       logprintf (LOG_NOTQUIET, _("Please report this issue to bug-wget@gnu.org\n"));
       abort ();
     }
@@ -608,7 +608,6 @@ ssl_connect_wget (int fd, const char *hostname, int *continue_session)
   switch (opt.secure_protocol)
     {
     case secure_protocol_auto:
-      err = gnutls_set_default_priority (session);
       break;
 
     case secure_protocol_sslv2:

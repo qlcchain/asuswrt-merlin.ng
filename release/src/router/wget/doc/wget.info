@@ -1508,10 +1508,6 @@ File: wget.info,  Node: HTTP Options,  Next: HTTPS (SSL/TLS) Options,  Prev: Dir
      authentication challenges, but accept unsolicited auth info, say,
      in addition to form-based authentication.
 
-‘--retry-on-host-error’
-     Consider host errors, such as “Temporary failure in name
-     resolution”, as non-fatal, transient errors.
-
 ‘--retry-on-http-error=CODE[,CODE,...]’
      Consider given HTTP response codes as non-fatal, transient errors.
      Supply a comma-separated list of 3-digit HTTP response codes as
@@ -1540,36 +1536,25 @@ compiled without SSL support, none of these options are available.
 
 ‘--secure-protocol=PROTOCOL’
      Choose the secure protocol to be used.  Legal values are ‘auto’,
-     ‘SSLv2’, ‘SSLv3’, ‘TLSv1’, ‘TLSv1_1’, ‘TLSv1_2’, ‘TLSv1_3’ and
-     ‘PFS’.  If ‘auto’ is used, the SSL library is given the liberty of
-     choosing the appropriate protocol automatically, which is achieved
-     by sending a TLSv1 greeting.  This is the default.
+     ‘SSLv2’, ‘SSLv3’, ‘TLSv1’, ‘TLSv1_1’, ‘TLSv1_2’ and ‘PFS’.  If
+     ‘auto’ is used, the SSL library is given the liberty of choosing
+     the appropriate protocol automatically, which is achieved by
+     sending a TLSv1 greeting.  This is the default.
 
-     Specifying ‘SSLv2’, ‘SSLv3’, ‘TLSv1’, ‘TLSv1_1’, ‘TLSv1_2’ or
-     ‘TLSv1_3’ forces the use of the corresponding protocol.  This is
-     useful when talking to old and buggy SSL server implementations
-     that make it hard for the underlying SSL library to choose the
-     correct protocol version.  Fortunately, such servers are quite
-     rare.
+     Specifying ‘SSLv2’, ‘SSLv3’, ‘TLSv1’, ‘TLSv1_1’ or ‘TLSv1_2’ forces
+     the use of the corresponding protocol.  This is useful when talking
+     to old and buggy SSL server implementations that make it hard for
+     the underlying SSL library to choose the correct protocol version.
+     Fortunately, such servers are quite rare.
 
      Specifying ‘PFS’ enforces the use of the so-called Perfect Forward
      Security cipher suites.  In short, PFS adds security by creating a
      one-time key for each SSL connection.  It has a bit more CPU impact
      on client and server.  We use known to be secure ciphers (e.g.  no
-     MD4) and the TLS protocol.  This mode also explicitly excludes
-     non-PFS key exchange methods, such as RSA.
+     MD4) and the TLS protocol.
 
 ‘--https-only’
      When in recursive mode, only HTTPS links are followed.
-
-‘--ciphers’
-     Set the cipher list string.  Typically this string sets the cipher
-     suites and other SSL/TLS options that the user wish should be used,
-     in a set order of preference (GnuTLS calls it ’priority string’).
-     This string will be fed verbatim to the SSL/TLS engine (OpenSSL or
-     GnuTLS) and hence its format and syntax is dependant on that.  Wget
-     will not process or manipulate it in any way.  Refer to the OpenSSL
-     or GnuTLS documentation for more information.
 
 ‘--no-check-certificate’
      Don’t check the server certificate against the available
@@ -3869,11 +3854,7 @@ File: wget.info,  Node: Reporting Bugs,  Next: Portability,  Prev: Internet Rela
 ==================
 
 You are welcome to submit bug reports via the GNU Wget bug tracker (see
-<https://savannah.gnu.org/bugs/?func=additem&group=wget>) or to our
-mailing list <bug-wget@gnu.org>.
-
-   Visit <https://lists.gnu.org/mailman/listinfo/bug-wget> to get more
-info (how to subscribe, list archives, ...).
+<https://savannah.gnu.org/bugs/?func=additem&group=wget>).
 
    Before actually submitting a bug report, please try to follow a few
 simple guidelines.
@@ -4787,9 +4768,9 @@ Concept Index
 * dot style:                             Download Options.    (line 189)
 * downloading multiple times:            Download Options.    (line  68)
 * EGD:                                   HTTPS (SSL/TLS) Options.
-                                                              (line 142)
+                                                              (line 131)
 * entropy, specifying source of:         HTTPS (SSL/TLS) Options.
-                                                              (line 127)
+                                                              (line 116)
 * examples:                              Examples.            (line   6)
 * exclude directories:                   Directory-Based Limits.
                                                               (line  30)
@@ -4818,7 +4799,7 @@ Concept Index
 * header, add:                           HTTP Options.        (line 171)
 * hosts, spanning:                       Spanning Hosts.      (line   6)
 * HSTS:                                  HTTPS (SSL/TLS) Options.
-                                                              (line 161)
+                                                              (line 150)
 * HTML comments:                         Recursive Retrieval Options.
                                                               (line 168)
 * http password:                         HTTP Options.        (line  43)
@@ -4902,7 +4883,7 @@ Concept Index
 * quota:                                 Download Options.    (line 398)
 * random wait:                           Download Options.    (line 373)
 * randomness, specifying source of:      HTTPS (SSL/TLS) Options.
-                                                              (line 127)
+                                                              (line 116)
 * rate, limit:                           Download Options.    (line 330)
 * read timeout:                          Download Options.    (line 319)
 * recursion:                             Recursive Download.  (line   6)
@@ -4942,19 +4923,19 @@ Concept Index
 * SSL:                                   HTTPS (SSL/TLS) Options.
                                                               (line   6)
 * SSL certificate:                       HTTPS (SSL/TLS) Options.
-                                                              (line  73)
+                                                              (line  62)
 * SSL certificate authority:             HTTPS (SSL/TLS) Options.
-                                                              (line  99)
+                                                              (line  88)
 * SSL certificate type, specify:         HTTPS (SSL/TLS) Options.
-                                                              (line  79)
+                                                              (line  68)
 * SSL certificate, check:                HTTPS (SSL/TLS) Options.
-                                                              (line  44)
+                                                              (line  33)
 * SSL CRL, certificate revocation list:  HTTPS (SSL/TLS) Options.
-                                                              (line 111)
+                                                              (line 100)
 * SSL protocol, choose:                  HTTPS (SSL/TLS) Options.
                                                               (line  11)
 * SSL Public Key Pin:                    HTTPS (SSL/TLS) Options.
-                                                              (line 115)
+                                                              (line 104)
 * start position:                        Download Options.    (line 177)
 * startup:                               Startup File.        (line   6)
 * startup file:                          Startup File.        (line   6)
@@ -4989,7 +4970,7 @@ Concept Index
 * wait, random:                          Download Options.    (line 373)
 * waiting between retries:               Download Options.    (line 364)
 * WARC:                                  HTTPS (SSL/TLS) Options.
-                                                              (line 240)
+                                                              (line 229)
 * web site:                              Web Site.            (line   6)
 * Wget as spider:                        Download Options.    (line 279)
 * wgetrc:                                Startup File.        (line   6)
@@ -5014,48 +4995,48 @@ Node: Logging and Input File Options13045
 Node: Download Options18429
 Node: Directory Options47995
 Node: HTTP Options50846
-Node: HTTPS (SSL/TLS) Options71498
-Node: FTP Options84657
-Node: Recursive Retrieval Options91719
-Node: Recursive Accept/Reject Options100976
-Node: Exit Status105181
-Node: Recursive Download106216
-Node: Following Links109455
-Node: Spanning Hosts110421
-Node: Types of Files112690
-Node: Directory-Based Limits117584
-Node: Relative Links120851
-Node: FTP Links121701
-Node: Time-Stamping122592
-Node: Time-Stamping Usage124264
-Node: HTTP Time-Stamping Internals126136
-Ref: HTTP Time-Stamping Internals-Footnote-1127484
-Node: FTP Time-Stamping Internals127687
-Node: Startup File129174
-Node: Wgetrc Location130114
-Node: Wgetrc Syntax130968
-Node: Wgetrc Commands131733
-Node: Sample Wgetrc148326
-Node: Examples154354
-Node: Simple Usage154715
-Node: Advanced Usage156164
-Node: Very Advanced Usage159980
-Node: Various161524
-Node: Proxies162233
-Node: Distribution165190
-Node: Web Site165530
-Node: Mailing Lists165830
-Node: Internet Relay Chat167567
-Node: Reporting Bugs167862
-Node: Portability170590
-Node: Signals172237
-Node: Appendices172944
-Node: Robot Exclusion173292
-Node: Security Considerations177154
-Node: Contributors178364
-Node: Copying this manual184094
-Node: GNU Free Documentation License184334
-Node: Concept Index209686
+Node: HTTPS (SSL/TLS) Options71353
+Node: FTP Options83886
+Node: Recursive Retrieval Options90948
+Node: Recursive Accept/Reject Options100205
+Node: Exit Status104410
+Node: Recursive Download105445
+Node: Following Links108684
+Node: Spanning Hosts109650
+Node: Types of Files111919
+Node: Directory-Based Limits116813
+Node: Relative Links120080
+Node: FTP Links120930
+Node: Time-Stamping121821
+Node: Time-Stamping Usage123493
+Node: HTTP Time-Stamping Internals125365
+Ref: HTTP Time-Stamping Internals-Footnote-1126713
+Node: FTP Time-Stamping Internals126916
+Node: Startup File128403
+Node: Wgetrc Location129343
+Node: Wgetrc Syntax130197
+Node: Wgetrc Commands130962
+Node: Sample Wgetrc147555
+Node: Examples153583
+Node: Simple Usage153944
+Node: Advanced Usage155393
+Node: Very Advanced Usage159209
+Node: Various160753
+Node: Proxies161462
+Node: Distribution164419
+Node: Web Site164759
+Node: Mailing Lists165059
+Node: Internet Relay Chat166796
+Node: Reporting Bugs167091
+Node: Portability169660
+Node: Signals171307
+Node: Appendices172014
+Node: Robot Exclusion172362
+Node: Security Considerations176224
+Node: Contributors177434
+Node: Copying this manual183164
+Node: GNU Free Documentation License183404
+Node: Concept Index208756
 
 End Tag Table
 

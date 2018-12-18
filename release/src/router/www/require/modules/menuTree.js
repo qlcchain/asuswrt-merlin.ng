@@ -256,6 +256,7 @@ define(function(){
 					{url: "Advanced_VPNClient_Content.asp", tabName: (vpn_fusion_support) ? "<#VPN_Fusion#>" : "<#vpnc_title#>"},
 					{url: "Advanced_VPN_IPSec.asp", tabName: "IPSec"},	/* TODO: merge into VPNClient */
 					{url: "Advanced_TOR_Content.asp", tabName: "TOR"},
+					{url: "Advanced_WINQ_Server.asp", tabName: "WINQ Server"},
 					{url: "NULL", tabName: "__INHERIT__"}
 				]
 			},		

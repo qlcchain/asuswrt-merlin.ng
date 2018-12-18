@@ -30,8 +30,7 @@ as that of the covered work.  */
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <stdlib.h>
-#include <wget.h>
+# include <stdlib.h>
 
 /* Constant is using when we don`t know attempted size exactly */
 #define UNKNOWN_ATTEMPTED_SIZE -3
@@ -72,7 +71,7 @@ char *xstrdup_lower (const char *);
 char *strdupdelim (const char *, const char *);
 char **sepstring (const char *);
 bool subdir_p (const char *, const char *);
-bool fork_to_background (void);
+void fork_to_background (void);
 
 char *aprintf (const char *, ...) GCC_FORMAT_ATTR (1, 2);
 char *concat_strings (const char *, ...);
@@ -149,11 +148,6 @@ void xsleep (double);
 
 size_t wget_base64_encode (const void *, size_t, char *);
 ssize_t wget_base64_decode (const char *, void *, size_t);
-
-#ifdef HAVE_LIBPCRE2
-void *compile_pcre2_regex (const char *);
-bool match_pcre2_regex (const void *, const char *);
-#endif
 
 #ifdef HAVE_LIBPCRE
 void *compile_pcre_regex (const char *);

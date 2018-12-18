@@ -731,8 +731,6 @@ wait_ares (ares_channel channel)
       else
         ares_process (channel, &read_fds, &write_fds);
     }
-  if (timer)
-    ptimer_destroy (timer);
 }
 
 static void
@@ -1033,9 +1031,8 @@ sufmatch (const char **list, const char *what)
       /* Domain or subdomain match
        * k == -1: exact match
        * k >= 0 && what[k] == '.': subdomain match
-       * k >= 0 && list[i][0] == '.': dot-prefixed subdomain match
        */
-      if (j == -1 && (k == -1 || what[k] == '.' || list[i][0] == '.'))
+      if (j == -1 && (k == -1 || what[k] == '.'))
         return true;
     }
 

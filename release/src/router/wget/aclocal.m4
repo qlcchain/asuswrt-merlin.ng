@@ -1010,38 +1010,6 @@ else
 fi
 ])
 
-# Copyright (C) 2003-2017 Free Software Foundation, Inc.
-#
-# This file is free software; the Free Software Foundation
-# gives unlimited permission to copy and/or distribute it,
-# with or without modifications, as long as this notice is preserved.
-
-# AM_PROG_MKDIR_P
-# ---------------
-# Check for 'mkdir -p'.
-AC_DEFUN([AM_PROG_MKDIR_P],
-[AC_PREREQ([2.60])dnl
-AC_REQUIRE([AC_PROG_MKDIR_P])dnl
-dnl FIXME we are no longer going to remove this! adjust warning
-dnl FIXME message accordingly.
-AC_DIAGNOSE([obsolete],
-[$0: this macro is deprecated, and will soon be removed.
-You should use the Autoconf-provided 'AC][_PROG_MKDIR_P' macro instead,
-and use '$(MKDIR_P)' instead of '$(mkdir_p)'in your Makefile.am files.])
-dnl Automake 1.8 to 1.9.6 used to define mkdir_p.  We now use MKDIR_P,
-dnl while keeping a definition of mkdir_p for backward compatibility.
-dnl @MKDIR_P@ is magic: AC_OUTPUT adjusts its value for each Makefile.
-dnl However we cannot define mkdir_p as $(MKDIR_P) for the sake of
-dnl Makefile.ins that do not define MKDIR_P, so we do our own
-dnl adjustment using top_builddir (which is defined more often than
-dnl MKDIR_P).
-AC_SUBST([mkdir_p], ["$MKDIR_P"])dnl
-case $mkdir_p in
-  [[\\/$]]* | ?:[[\\/]]*) ;;
-  */*) mkdir_p="\$(top_builddir)/$mkdir_p" ;;
-esac
-])
-
 # Helper functions for option handling.                     -*- Autoconf -*-
 
 # Copyright (C) 2001-2017 Free Software Foundation, Inc.
@@ -1695,19 +1663,17 @@ AC_SUBST([am__untar])
 ]) # _AM_PROG_TAR
 
 m4_include([m4/00gnulib.m4])
-m4_include([m4/__inline.m4])
 m4_include([m4/absolute-header.m4])
-m4_include([m4/af_alg.m4])
 m4_include([m4/alloca.m4])
 m4_include([m4/arpa_inet_h.m4])
 m4_include([m4/asm-underscore.m4])
 m4_include([m4/base32.m4])
 m4_include([m4/btowc.m4])
 m4_include([m4/builtin-expect.m4])
-m4_include([m4/byteswap.m4])
 m4_include([m4/clock_time.m4])
 m4_include([m4/close.m4])
 m4_include([m4/codeset.m4])
+m4_include([m4/configmake.m4])
 m4_include([m4/dirname.m4])
 m4_include([m4/double-slash-root.m4])
 m4_include([m4/dup2.m4])
@@ -1722,15 +1688,11 @@ m4_include([m4/fatal-signal.m4])
 m4_include([m4/fcntl-o.m4])
 m4_include([m4/fcntl.m4])
 m4_include([m4/fcntl_h.m4])
-m4_include([m4/fflush.m4])
 m4_include([m4/flexmember.m4])
 m4_include([m4/float_h.m4])
 m4_include([m4/flock.m4])
 m4_include([m4/fnmatch.m4])
-m4_include([m4/fnmatch_h.m4])
 m4_include([m4/fopen.m4])
-m4_include([m4/fpurge.m4])
-m4_include([m4/freading.m4])
 m4_include([m4/fseek.m4])
 m4_include([m4/fseeko.m4])
 m4_include([m4/fstat.m4])
@@ -1753,6 +1715,7 @@ m4_include([m4/glibc21.m4])
 m4_include([m4/gnulib-common.m4])
 m4_include([m4/gnulib-comp.m4])
 m4_include([m4/group-member.m4])
+m4_include([m4/hard-locale.m4])
 m4_include([m4/host-cpu-c-abi.m4])
 m4_include([m4/hostent.m4])
 m4_include([m4/iconv.m4])
@@ -1836,7 +1799,6 @@ m4_include([m4/sched_h.m4])
 m4_include([m4/secure_getenv.m4])
 m4_include([m4/select.m4])
 m4_include([m4/servent.m4])
-m4_include([m4/sh-filename.m4])
 m4_include([m4/sha1.m4])
 m4_include([m4/sha256.m4])
 m4_include([m4/sha512.m4])
@@ -1856,7 +1818,6 @@ m4_include([m4/spawn_h.m4])
 m4_include([m4/ssize_t.m4])
 m4_include([m4/stat-time.m4])
 m4_include([m4/stat.m4])
-m4_include([m4/std-gnu11.m4])
 m4_include([m4/stdalign.m4])
 m4_include([m4/stdbool.m4])
 m4_include([m4/stddef_h.m4])
@@ -1876,7 +1837,6 @@ m4_include([m4/strnlen.m4])
 m4_include([m4/strpbrk.m4])
 m4_include([m4/strptime.m4])
 m4_include([m4/strtok_r.m4])
-m4_include([m4/strtol.m4])
 m4_include([m4/strtoll.m4])
 m4_include([m4/symlink.m4])
 m4_include([m4/sys_file_h.m4])

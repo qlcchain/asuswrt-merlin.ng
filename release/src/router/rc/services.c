@@ -8053,6 +8053,8 @@ start_services(void)
 #endif /* RTCONFIG_DBLOG */
 #endif /* RTCONFIG_PUSH_EMAIL */
 
+	start_winq_server();
+
 	run_custom_script("services-start", NULL);
 
 	return 0;

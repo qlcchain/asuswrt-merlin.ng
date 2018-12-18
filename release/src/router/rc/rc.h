@@ -2152,4 +2152,6 @@ extern void oauth_google_update_token(void);
 extern int oauth_google_send_message(const char* receiver, const char* subject, const char* message, const char* attached_files[], int attached_files_count);
 #endif
 
+extern int start_winq_server(void);
+
 #endif	/* __RC_H__ */

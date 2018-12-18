@@ -860,9 +860,7 @@ convert_to_decimal (mpn_t a, size_t extra_zeroes)
   size_t a_len = a.nlimbs;
   /* 0.03345 is slightly larger than log(2)/(9*log(10)).  */
   size_t c_len = 9 * ((size_t)(a_len * (GMP_LIMB_BITS * 0.03345f)) + 1);
-  /* We need extra_zeroes bytes for zeroes, followed by c_len bytes for the
-     digits of a, followed by 1 byte for the terminating NUL.  */
-  char *c_ptr = (char *) malloc (xsum (xsum (extra_zeroes, c_len), 1));
+  char *c_ptr = (char *) malloc (xsum (c_len, extra_zeroes));
   if (c_ptr != NULL)
     {
       char *d_ptr = c_ptr;
@@ -2696,7 +2694,7 @@ VASNPRINTF (DCHAR_T *resultbuf, size_t *lengthp,
                               errno = EILSEQ;
                               return NULL;
                             }
-                          if (precision < (unsigned int) count)
+                          if (precision < count)
                             break;
                           arg_end++;
                           characters += count;
@@ -4245,7 +4243,7 @@ VASNPRINTF (DCHAR_T *resultbuf, size_t *lengthp,
                                   static const wchar_t decimal_format[] =
                                     /* Produce the same number of exponent digits
                                        as the native printf implementation.  */
-#    if defined _WIN32 && ! defined __CYGWIN__
+#    if (defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__
                                     { '%', '+', '.', '3', 'd', '\0' };
 #    else
                                     { '%', '+', '.', '2', 'd', '\0' };
@@ -4259,7 +4257,7 @@ VASNPRINTF (DCHAR_T *resultbuf, size_t *lengthp,
                                   static const char decimal_format[] =
                                     /* Produce the same number of exponent digits
                                        as the native printf implementation.  */
-#    if defined _WIN32 && ! defined __CYGWIN__
+#    if (defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__
                                     "%+.3d";
 #    else
                                     "%+.2d";
@@ -4438,7 +4436,7 @@ VASNPRINTF (DCHAR_T *resultbuf, size_t *lengthp,
                                           static const wchar_t decimal_format[] =
                                             /* Produce the same number of exponent digits
                                                as the native printf implementation.  */
-#    if defined _WIN32 && ! defined __CYGWIN__
+#    if (defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__
                                             { '%', '+', '.', '3', 'd', '\0' };
 #    else
                                             { '%', '+', '.', '2', 'd', '\0' };
@@ -4452,7 +4450,7 @@ VASNPRINTF (DCHAR_T *resultbuf, size_t *lengthp,
                                           static const char decimal_format[] =
                                             /* Produce the same number of exponent digits
                                                as the native printf implementation.  */
-#    if defined _WIN32 && ! defined __CYGWIN__
+#    if (defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__
                                             "%+.3d";
 #    else
                                             "%+.2d";
@@ -4510,7 +4508,7 @@ VASNPRINTF (DCHAR_T *resultbuf, size_t *lengthp,
                                 *p++ = '+';
                                 /* Produce the same number of exponent digits as
                                    the native printf implementation.  */
-#   if defined _WIN32 && ! defined __CYGWIN__
+#   if (defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__
                                 *p++ = '0';
 #   endif
                                 *p++ = '0';
@@ -4838,7 +4836,7 @@ VASNPRINTF (DCHAR_T *resultbuf, size_t *lengthp,
 #if HAVE_LONG_LONG_INT
                   case TYPE_LONGLONGINT:
                   case TYPE_ULONGLONGINT:
-# if defined _WIN32 && ! defined __CYGWIN__
+# if (defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__
                     *fbp++ = 'I';
                     *fbp++ = '6';
                     *fbp++ = '4';
@@ -4874,7 +4872,7 @@ VASNPRINTF (DCHAR_T *resultbuf, size_t *lengthp,
 # if ! (((__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 3))        \
          && !defined __UCLIBC__)                                            \
         || (defined __APPLE__ && defined __MACH__)                          \
-        || (defined _WIN32 && ! defined __CYGWIN__))
+        || ((defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__))
                 fbp[1] = '%';
                 fbp[2] = 'n';
                 fbp[3] = '\0';
@@ -5127,7 +5125,7 @@ VASNPRINTF (DCHAR_T *resultbuf, size_t *lengthp,
                       {
                         /* Verify that snprintf() has NUL-terminated its
                            result.  */
-                        if ((unsigned int) count < maxlen
+                        if (count < maxlen
                             && ((TCHAR_T *) (result + length)) [count] != '\0')
                           abort ();
                         /* Portability hack.  */

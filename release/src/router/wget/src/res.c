@@ -84,7 +84,7 @@ as that of the covered work.  */
 #include "c-strcase.h"
 
 #ifdef TESTING
-#include "../tests/unit-tests.h"
+#include "test.h"
 #endif
 
 struct path_info {
@@ -170,8 +170,6 @@ prune_non_exact (struct robot_specs *specs)
   for (i = 0, j = 0; i < specs->count; i++)
     if (specs->paths[i].user_agent_exact_p)
       newpaths[j++] = specs->paths[i];
-	 else
-		 xfree (specs->paths[i].path);
   assert (j == cnt);
   xfree (specs->paths);
   specs->paths = newpaths;

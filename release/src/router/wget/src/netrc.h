@@ -31,9 +31,17 @@ as that of the covered work.  */
 #ifndef NETRC_H
 #define NETRC_H
 
-#include <stdio.h>
+typedef struct _acc_t
+{
+  char *host;           /* NULL if this is the default machine
+                           entry.  */
+  char *acc;
+  char *passwd;         /* NULL if there is no password.  */
+  struct _acc_t *next;
+} acc_t;
 
-void search_netrc (const char *, const char **, const char **, int, FILE *);
+void search_netrc (const char *, const char **, const char **, int);
+void free_netrc (acc_t *l);
 void netrc_cleanup(void);
 
 #endif /* NETRC_H */

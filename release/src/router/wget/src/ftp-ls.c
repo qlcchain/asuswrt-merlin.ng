@@ -90,8 +90,9 @@ clean_line (char *line, int len)
    The time stamps are stored in a separate variable, time_t
    compatible (I hope).  The timezones are ignored.  */
 static struct fileinfo *
-ftp_parse_unix_ls (FILE *fp, int ignore_perms)
+ftp_parse_unix_ls (const char *file, int ignore_perms)
 {
+  FILE *fp;
   static const char *months[] = {
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
@@ -106,6 +107,12 @@ ftp_parse_unix_ls (FILE *fp, int ignore_perms)
   char *line = NULL, *tok, *ptok;      /* tokenizer */
   struct fileinfo *dir, *l, cur;       /* list creation */
 
+  fp = fopen (file, "rb");
+  if (!fp)
+    {
+      logprintf (LOG_NOTQUIET, "%s: %s\n", file, strerror (errno));
+      return NULL;
+    }
   dir = l = NULL;
 
   /* Line loop to end of file: */
@@ -242,25 +249,24 @@ ftp_parse_unix_ls (FILE *fp, int ignore_perms)
               /* We must deal with digits.  */
               if (c_isdigit (*tok))
                 {
-                  /* Suppose it's year.  Limit to year 99999 to avoid integer overflow. */
-                  for (; c_isdigit (*tok) && year <= 99999; tok++)
+                  /* Suppose it's year.  */
+                  for (; c_isdigit (*tok); tok++)
                     year = (*tok - '0') + 10 * year;
                   if (*tok == ':')
                     {
-                      int n;
                       /* This means these were hours!  */
                       hour = year;
                       year = 0;
                       ptype = TT_HOUR_MIN;
                       ++tok;
                       /* Get the minutes...  */
-                      for (n = 0; c_isdigit (*tok) && n < 2; tok++, n++)
+                      for (; c_isdigit (*tok); tok++)
                         min = (*tok - '0') + 10 * min;
                       if (*tok == ':')
                         {
                           /* ...and the seconds.  */
                           ++tok;
-                          for (n = 0; c_isdigit (*tok) && n < 2; tok++, n++)
+                          for (; c_isdigit (*tok); tok++)
                             sec = (*tok - '0') + 10 * sec;
                         }
                     }
@@ -407,12 +413,14 @@ ftp_parse_unix_ls (FILE *fp, int ignore_perms)
     }
 
   xfree (line);
+  fclose (fp);
   return dir;
 }
 
 static struct fileinfo *
-ftp_parse_winnt_ls (FILE *fp)
+ftp_parse_winnt_ls (const char *file)
 {
+  FILE *fp;
   int len;
   int year, month, day;         /* for time analysis */
   int hour, min;
@@ -423,8 +431,13 @@ ftp_parse_winnt_ls (FILE *fp)
   char *filename;
   struct fileinfo *dir, *l, cur; /* list creation */
 
+  fp = fopen (file, "rb");
+  if (!fp)
+    {
+      logprintf (LOG_NOTQUIET, "%s: %s\n", file, strerror (errno));
+      return NULL;
+    }
   dir = l = NULL;
-  cur.name = NULL;
 
   /* Line loop to end of file: */
   while ((len = getline (&line, &bufsize, fp)) > 0)
@@ -443,8 +456,8 @@ ftp_parse_winnt_ls (FILE *fp)
          january will be assumed.  */
       tok = strtok(line, "-");
       if (tok == NULL) continue;
-      month = atoi(tok);
-      if (month < 0) month = 0; else month--;
+      month = atoi(tok) - 1;
+      if (month < 0) month = 0;
       tok = strtok(NULL, "-");
       if (tok == NULL) continue;
       day = atoi(tok);
@@ -459,12 +472,10 @@ ftp_parse_winnt_ls (FILE *fp)
       else if (year >= 1900)
         {
           year -= 1900;
-          if (len < 42) continue;
           filename += 2;
         }
       /* Now it is possible to determine the position of the first symbol in
          filename. */
-      xfree (cur.name);
       memset(&cur, 0, sizeof (cur));
       cur.name = xstrdup(filename);
       DEBUGP (("Name: '%s'\n", cur.name));
@@ -480,8 +491,8 @@ ftp_parse_winnt_ls (FILE *fp)
       min = atoi(tok);
       /* Adjust hour from AM/PM. Just for the record, the sequence goes
          11:00AM, 12:00PM, 01:00PM ... 11:00PM, 12:00AM, 01:00AM . */
-      if (tok[0] && tok[1]) tok+=2;
-      if (hour >= 12 || hour < 0)  hour  = 0;
+      tok+=2;
+      if (hour == 12)  hour  = 0;
       if (*tok == 'P') hour += 12;
 
       DEBUGP (("YYYY/MM/DD HH:MM - %d/%02d/%02d %02d:%02d\n",
@@ -548,11 +559,10 @@ ftp_parse_winnt_ls (FILE *fp)
           memcpy (l, &cur, sizeof (cur));
           l->next = NULL;
         }
-      cur.name = NULL;
     }
 
-  xfree (cur.name);
   xfree (line);
+  fclose(fp);
   return dir;
 }
 
@@ -594,6 +604,7 @@ static void eat_carets( char *str)
   char *strd;   /* Destination pointer. */
   char hdgt;
   unsigned char uchr;
+  unsigned char prop;
 
   /* Skip ahead to the first "^", if any. */
   while ((*str != '\0') && (*str != '^'))
@@ -610,10 +621,11 @@ static void eat_carets( char *str)
       if (uchr == '^')
       {
         /* Found a caret.  Skip it, and check the next character. */
-        if ((char_prop[(unsigned char) str[0]] & 64) && (char_prop[(unsigned char) str[1]] & 64))
+        uchr = *(++str);
+        prop = char_prop[ uchr];
+        if (prop& 64)
         {
           /* Hex digit.  Get char code from this and next hex digit. */
-          uchr = *(++str);
           if (uchr <= '9')
           {
             hdgt = uchr- '0';           /* '0' - '9' -> 0 - 9. */
@@ -665,18 +677,25 @@ static void eat_carets( char *str)
 
 
 static struct fileinfo *
-ftp_parse_vms_ls (FILE *fp)
+ftp_parse_vms_ls (const char *file)
 {
+  FILE *fp;
   int dt, i, j, len;
   int perms;
   size_t bufsize = 0;
   time_t timenow;
   struct tm *timestruct;
-  char date_str[32];
+  char date_str[ 32];
 
   char *line = NULL, *tok; /* tokenizer */
   struct fileinfo *dir, *l, cur; /* list creation */
 
+  fp = fopen (file, "r");
+  if (!fp)
+    {
+      logprintf (LOG_NOTQUIET, "%s: %s\n", file, strerror (errno));
+      return NULL;
+    }
   dir = l = NULL;
 
   /* Skip blank lines, Directory heading, and more blank lines. */
@@ -708,7 +727,6 @@ ftp_parse_vms_ls (FILE *fp)
 
   /* Read remainder of file until the next blank line or EOF. */
 
-  cur.name = NULL;
   while (i > 0)
     {
       char *p;
@@ -735,8 +753,8 @@ ftp_parse_vms_ls (FILE *fp)
       */
 
 #if (!defined( __VMS) && !defined( PRESERVE_VMS_VERSIONS))
-      for (p = tok + strlen (tok); (--p > tok) && c_isdigit(*p); );
-      if (p > tok && (*p == ';') && (*(p - 1) != '^'))
+      for (p = tok + strlen (tok); (--p > tok) && c_isdigit( *p); );
+      if ((*p == ';') && (*(p- 1) != '^'))
         {
           *p = '\0';
         }
@@ -757,16 +775,16 @@ ftp_parse_vms_ls (FILE *fp)
          what will work in a CWD command.
       */
       len = strlen (tok);
-      if (len >= 4 && !c_strncasecmp(tok + (len - 4), ".DIR", 4))
+      if (!c_strncasecmp((tok + (len - 4)), ".DIR", 4))
         {
-          *(tok + (len - 4)) = '\0'; /* Discard ".DIR". */
+          *(tok+ (len - 4)) = '\0'; /* Discard ".DIR". */
           cur.type  = FT_DIRECTORY;
           cur.perms = VMS_DEFAULT_PROT_DIR;
           DEBUGP (("Directory (nv)\n"));
         }
-      else if (len >= 6 && !c_strncasecmp (tok + len - 6, ".DIR;1", 6))
+      else if (!c_strncasecmp ((tok + (len - 6)), ".DIR;1", 6))
         {
-          *(tok + (len - 6)) = '\0'; /* Discard ".DIR;1". */
+          *(tok+ (len - 6)) = '\0'; /* Discard ".DIR;1". */
           cur.type  = FT_DIRECTORY;
           cur.perms = VMS_DEFAULT_PROT_DIR;
           DEBUGP (("Directory (v)\n"));
@@ -777,7 +795,6 @@ ftp_parse_vms_ls (FILE *fp)
           cur.perms = VMS_DEFAULT_PROT_FILE;
           DEBUGP (("File\n"));
         }
-      xfree (cur.name);
       cur.name = xstrdup (tok);
       DEBUGP (("Name: '%s'\n", cur.name));
 
@@ -891,12 +908,12 @@ ftp_parse_vms_ls (FILE *fp)
                       if (j == 0)
                         {
                           perms = 0;
+                          j = 1;
                         }
-                      else if (j < 4)
+                      else
                         {
                           perms <<= 3;
                         }
-                      j++;
                       break;
                     case 'R':
                       perms |= 4;
@@ -972,7 +989,6 @@ ftp_parse_vms_ls (FILE *fp)
           memcpy (l, &cur, sizeof (cur));
           l->next = NULL;
         }
-      cur.name = NULL;
 
       i = getline (&line, &bufsize, fp);
       if (i > 0)
@@ -986,8 +1002,8 @@ ftp_parse_vms_ls (FILE *fp)
         }
     }
 
-  xfree (cur.name);
   xfree (line);
+  fclose (fp);
   return dir;
 }
 
@@ -1001,50 +1017,38 @@ ftp_parse_vms_ls (FILE *fp)
 struct fileinfo *
 ftp_parse_ls (const char *file, const enum stype system_type)
 {
-  FILE *fp;
-  struct fileinfo *fi;
-
-  fp = fopen (file, "rb");
-  if (!fp)
-    {
-      logprintf (LOG_NOTQUIET, "%s: %s\n", file, strerror (errno));
-      return NULL;
-    }
-
-  fi = ftp_parse_ls_fp (fp, system_type);
-  fclose(fp);
-
-  return fi;
-}
-
-struct fileinfo *
-ftp_parse_ls_fp (FILE *fp, const enum stype system_type)
-{
   switch (system_type)
     {
     case ST_UNIX:
-      return ftp_parse_unix_ls (fp, 0);
+      return ftp_parse_unix_ls (file, 0);
     case ST_WINNT:
       {
         /* Detect whether the listing is simulating the UNIX format */
-        int   c = fgetc(fp);
-        rewind(fp);
-
+        FILE *fp;
+        int   c;
+        fp = fopen (file, "rb");
+        if (!fp)
+        {
+          logprintf (LOG_NOTQUIET, "%s: %s\n", file, strerror (errno));
+          return NULL;
+        }
+        c = fgetc(fp);
+        fclose(fp);
         /* If the first character of the file is '0'-'9', it's WINNT
            format. */
         if (c >= '0' && c <='9')
-          return ftp_parse_winnt_ls (fp);
+          return ftp_parse_winnt_ls (file);
         else
-          return ftp_parse_unix_ls (fp, 1);
+          return ftp_parse_unix_ls (file, 1);
       }
     case ST_VMS:
-      return ftp_parse_vms_ls (fp);
+      return ftp_parse_vms_ls (file);
     case ST_MACOS:
-      return ftp_parse_unix_ls (fp, 1);
+      return ftp_parse_unix_ls (file, 1);
     default:
       logprintf (LOG_NOTQUIET, _("\
 Unsupported listing type, trying Unix listing parser.\n"));
-      return ftp_parse_unix_ls (fp, 0);
+      return ftp_parse_unix_ls (file, 0);
     }
 }
 

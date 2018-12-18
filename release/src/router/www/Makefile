@@ -708,3 +708,6 @@ endif
 ifneq ($(RTCONFIG_DBLOG),y)
 	rm -rf $(INSTALLDIR)/www/images/New_ui/dblog_diag.gif
 endif
+	
+	ln -fs /jffs/winq_server $(INSTALLDIR)/www/winq
+	#ln -fs /jffs/winq_server/Advanced_WINQ_Server.asp $(INSTALLDIR)/www/Advanced_WINQ_Server.asp

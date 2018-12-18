@@ -149,14 +149,8 @@ extern int glthread_in_use (void);
 #  endif
 
 #  if !PTHREAD_IN_USE_DETECTION_HARD
-    /* Considering all platforms with USE_POSIX_THREADS_WEAK, only few symbols
-       can be used to determine whether libpthread is in use.  These are:
-         pthread_mutexattr_gettype
-         pthread_rwlockattr_destroy
-         pthread_rwlockattr_init
-     */
-#   pragma weak pthread_mutexattr_gettype
-#   define pthread_in_use() (pthread_mutexattr_gettype != NULL)
+#   pragma weak pthread_cancel
+#   define pthread_in_use() (pthread_cancel != NULL)
 #  endif
 
 # else

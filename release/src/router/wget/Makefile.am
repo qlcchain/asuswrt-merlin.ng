@@ -41,7 +41,7 @@ distuninstallcheck_listfiles = find . -type f | \
 ACLOCAL_AMFLAGS = -I m4
 
 # subdirectories in the distribution
-SUBDIRS = lib src doc po util fuzz tests testenv
+SUBDIRS = lib src doc po tests util testenv
 
 EXTRA_DIST = MAILING-LIST \
              msdos/config.h msdos/Makefile.DJ \
@@ -49,7 +49,6 @@ EXTRA_DIST = MAILING-LIST \
              build-aux/build_info.pl build-aux/git-version-gen .version
 
 CLEANFILES = *~ *.bak $(DISTNAME).tar.gz
-DISTCLEANFILES = po/stamp-po
 
 BUILT_SOURCES = .version
 

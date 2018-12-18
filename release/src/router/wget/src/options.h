@@ -41,7 +41,6 @@ struct options
   bool quiet;                   /* Are we quiet? */
   int ntry;                     /* Number of tries per URL */
   bool retry_connrefused;       /* Treat CONNREFUSED as non-fatal. */
-  bool retry_on_host_error;     /* Treat host errors as non-fatal. */
   char *retry_on_http_error;    /* Treat given HTTP errors as non-fatal. */
   bool background;              /* Whether we should work in background. */
   bool ignore_length;           /* Do we heed content-length at all?  */
@@ -92,7 +91,7 @@ struct options
   void *acceptregex;            /* Patterns to accept (a regex struct). */
   void *rejectregex;            /* Patterns to reject (a regex struct). */
   enum {
-#if defined HAVE_LIBPCRE || HAVE_LIBPCRE2
+#ifdef HAVE_LIBPCRE
     regex_type_pcre,
 #endif
     regex_type_posix
@@ -229,7 +228,6 @@ struct options
     secure_protocol_tlsv1,
     secure_protocol_tlsv1_1,
     secure_protocol_tlsv1_2,
-    secure_protocol_tlsv1_3,
     secure_protocol_pfs
   } secure_protocol;            /* type of secure protocol to use. */
   int check_cert;               /* whether to validate the server's cert */
@@ -258,8 +256,6 @@ struct options
   bool ftps_fallback_to_ftp;
   bool ftps_implicit;
   bool ftps_clear_data_connection;
-
-  char *tls_ciphers_string;
 #endif /* HAVE_SSL */
 
   bool cookies;                 /* whether cookies are used. */
@@ -342,9 +338,6 @@ struct options
   bool hsts;
   char *hsts_file;
 #endif
-
-  const char *homedir;          /* the homedir of the running process */
-  const char *wgetrcfile;       /* the wgetrc file to be loaded */
 };
 
 extern struct options opt;

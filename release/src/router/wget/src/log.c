@@ -599,9 +599,7 @@ debug_logprintf (const char *fmt, ...)
       struct logvprintf_state lpstate;
       bool done;
 
-#ifndef TESTING
       check_redirect_output ();
-#endif
       if (inhibit_logging)
         return;
 
@@ -678,16 +676,9 @@ log_close (void)
 {
   int i;
 
-  if (logfp && logfp != stderr && logfp != stdout)
-    {
-      if (logfp == stdlogfp)
-        stdlogfp = NULL;
-      if (logfp == filelogfp)
-        filelogfp = NULL;
-      fclose (logfp);
-    }
+  if (logfp && (logfp != stderr))
+    fclose (logfp);
   logfp = NULL;
-
   inhibit_logging = true;
   save_context_p = false;
 
@@ -974,7 +965,7 @@ check_redirect_output (void)
     {
       pid_t foreground_pgrp = tcgetpgrp (STDIN_FILENO);
 
-      if (foreground_pgrp != -1 && foreground_pgrp != getpgrp () && !opt.quiet)
+      if (foreground_pgrp != -1 && foreground_pgrp != getpgrp ())
         {
           /* Process backgrounded */
           redirect_output (true,NULL);

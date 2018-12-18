@@ -71,7 +71,7 @@ as that of the covered work.  */
 #endif
 
 #ifdef TESTING
-#include "../tests/unit-tests.h"
+#include "test.h"
 #endif
 
 #ifdef __VMS
@@ -613,9 +613,9 @@ struct response {
    resp_header_*.  */
 
 static struct response *
-resp_new (char *head)
+resp_new (const char *head)
 {
-  char *hdr;
+  const char *hdr;
   int count, size;
 
   struct response *resp = xnew0 (struct response);
@@ -644,26 +644,15 @@ resp_new (char *head)
         break;
 
       /* Find the end of HDR, including continuations. */
-      for (;;)
+      do
         {
-          char *end = strchr (hdr, '\n');
-
-          if (!end)
-            {
-              hdr += strlen (hdr);
-              break;
-            }
-
-          hdr = end + 1;
-
-          if (*hdr != ' ' && *hdr != '\t')
-            break;
-
-          // continuation, transform \r and \n into spaces
-          *end = ' ';
-          if (end > head && end[-1] == '\r')
-            end[-1] = ' ';
+          const char *end = strchr (hdr, '\n');
+          if (end)
+            hdr = end + 1;
+          else
+            hdr += strlen (hdr);
         }
+      while (*hdr == ' ' || *hdr == '\t');
     }
   DO_REALLOC (resp->headers, size, count + 1, const char *);
   resp->headers[count] = NULL;
@@ -1938,10 +1927,10 @@ initialize_request (const struct url *u, struct http_stat *hs, int *dt, struct u
 
   /* Check for ~/.netrc if none of the above match */
   if (opt.netrc && (!*user || !*passwd))
-    search_netrc (u->host, (const char **) user, (const char **) passwd, 0, NULL);
+    search_netrc (u->host, (const char **) user, (const char **) passwd, 0);
 
   /* We only do "site-wide" authentication with "global" user/password
-   * values unless --auth-no-challenge has been requested; URL user/password
+   * values unless --auth-no-challange has been requested; URL user/password
    * info overrides. */
   if (*user && *passwd && (!u->user || opt.auth_without_challenge))
     {
@@ -2454,8 +2443,6 @@ check_auth (const struct url *u, char *user, char *passwd, struct response *resp
                                               auth_stat);
 
           auth_err = *auth_stat;
-          xfree (auth_stat);
-          xfree (pth);
           if (auth_err == RETROK)
             {
               request_set_header (req, "Authorization", value, rel_value);
@@ -2469,6 +2456,8 @@ check_auth (const struct url *u, char *user, char *passwd, struct response *resp
                   register_basic_auth_host (u->host);
                 }
 
+              xfree (pth);
+              xfree (auth_stat);
               *retry = true;
               goto cleanup;
             }
@@ -3806,7 +3795,7 @@ gethttp (const struct url *u, struct url *original_url, struct http_stat *hs,
           hs->restval = 0;
 
           /* Normally we are not interested in the response body of a redirect.
-             But if we are writing a WARC file we are: we like to keep everything.  */
+             But if we are writing a WARC file we are: we like to keep everyting.  */
           if (warc_enabled)
             {
               int _err = read_response_body (hs, sock, NULL, contlen, 0,
@@ -3965,6 +3954,16 @@ gethttp (const struct url *u, struct url *original_url, struct http_stat *hs,
         }
     }
 
+  if (statcode == HTTP_STATUS_RANGE_NOT_SATISFIABLE
+      && hs->restval < (contlen + contrange))
+    {
+      /* The file was not completely downloaded,
+         yet the server claims the range is invalid.
+         Bail out.  */
+      CLOSE_INVALIDATE (sock);
+      retval = RANGEERR;
+      goto cleanup;
+    }
   if (statcode == HTTP_STATUS_RANGE_NOT_SATISFIABLE
       || (!opt.timestamping && hs->restval > 0 && statcode == HTTP_STATUS_OK
           && contrange == 0 && contlen >= 0 && hs->restval >= contlen))
@@ -4379,20 +4378,7 @@ http_loop (const struct url *u, struct url *original_url, char **newloc,
           logputs (LOG_VERBOSE, "\n");
           logprintf (LOG_NOTQUIET, _("Cannot write to %s (%s).\n"),
                      quote (hstat.local_file), strerror (errno));
-          ret = err;
-          goto exit;
-        case HOSTERR:
-          /* Fatal unless option set otherwise. */
-          if ( opt.retry_on_host_error )
-            {
-              printwhat (count, opt.ntry);
-              xfree (hstat.message);
-              xfree (hstat.error);
-              continue;
-            }
-          ret = err;
-          goto exit;
-        case CONIMPOSSIBLE: case PROXERR: case SSLINITFAILED:
+        case HOSTERR: case CONIMPOSSIBLE: case PROXERR: case SSLINITFAILED:
         case CONTNOTSUPPORTED: case VERIFCERTERR: case FILEBADFILE:
         case UNKNOWNATTR:
           /* Fatal errors just return from the function.  */
@@ -4498,7 +4484,6 @@ http_loop (const struct url *u, struct url *original_url, char **newloc,
               && (hstat.statcode == 500 || hstat.statcode == 501))
             {
               got_head = true;
-              xfree (hurl);
               continue;
             }
           /* Maybe we should always keep track of broken links, not just in
@@ -4517,7 +4502,6 @@ Remote file does not exist -- broken link!!!\n"));
           else if (check_retry_on_http_error (hstat.statcode))
             {
               printwhat (count, opt.ntry);
-              xfree (hurl);
               continue;
             }
           else
@@ -4610,7 +4594,7 @@ The sizes do not match (local %s) -- retrieving.\n"),
                   bool finished = true;
                   if (opt.recursive)
                     {
-                      if ((*dt & TEXTHTML) || (*dt & TEXTCSS))
+                      if (*dt & TEXTHTML)
                         {
                           logputs (LOG_VERBOSE, _("\
 Remote file exists and could contain links to other resources -- retrieving.\n\n"));
@@ -4625,7 +4609,7 @@ Remote file exists but does not contain any link -- not retrieving.\n\n"));
                     }
                   else
                     {
-                      if ((*dt & TEXTHTML) || (*dt & TEXTCSS))
+                      if (*dt & TEXTHTML)
                         {
                           logprintf (LOG_VERBOSE, _("\
 Remote file exists and could contain further links,\n\

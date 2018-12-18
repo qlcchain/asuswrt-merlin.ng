@@ -159,8 +159,8 @@ limit_bandwidth (wgint bytes, struct ptimer *timer)
 /* Write data in BUF to OUT.  However, if *SKIP is non-zero, skip that
    amount of data and decrease SKIP.  Increment *TOTAL by the amount
    of data written.  If OUT2 is not NULL, also write BUF to OUT2.
-   In case of error writing to OUT, -2 is returned.  In case of error
-   writing to OUT2, -3 is returned.  Return 1 if the whole BUF was
+   In case of error writing to OUT, -1 is returned.  In case of error
+   writing to OUT2, -2 is returned.  Return 1 if the whole BUF was
    skipped.  */
 
 static int
@@ -169,31 +169,25 @@ write_data (FILE *out, FILE *out2, const char *buf, int bufsize,
 {
   if (out == NULL && out2 == NULL)
     return 1;
-
-  if (skip)
+  if (*skip > bufsize)
     {
-      if (*skip > bufsize)
-        {
-          *skip -= bufsize;
-          return 1;
-        }
-      if (*skip)
-        {
-          buf += *skip;
-          bufsize -= *skip;
-          *skip = 0;
-          if (bufsize == 0)
-            return 1;
-        }
+      *skip -= bufsize;
+      return 1;
+    }
+  if (*skip)
+    {
+      buf += *skip;
+      bufsize -= *skip;
+      *skip = 0;
+      if (bufsize == 0)
+        return 1;
     }
 
-  if (out)
+  if (out != NULL)
     fwrite (buf, 1, bufsize, out);
-  if (out2)
+  if (out2 != NULL)
     fwrite (buf, 1, bufsize, out2);
-
-  if (written)
-    *written += bufsize;
+  *written += bufsize;
 
   /* Immediately flush the downloaded data.  This should not hinder
      performance: fast downloads will arrive in large 16K chunks
@@ -209,18 +203,17 @@ write_data (FILE *out, FILE *out2, const char *buf, int bufsize,
      actual justification.  (Also, why 16K?  Anyone test other values?)
   */
 #ifndef __VMS
-  if (out)
+  if (out != NULL)
     fflush (out);
-  if (out2)
+  if (out2 != NULL)
     fflush (out2);
 #endif /* ndef __VMS */
-
-  if (out && ferror (out))
+  if (out != NULL && ferror (out))
+    return -1;
+  else if (out2 != NULL && ferror (out2))
     return -2;
-  else if (out2 && ferror (out2))
-    return -3;
-
-  return 0;
+  else
+    return 0;
 }
 
 /* Read the contents of file descriptor FD until it the connection
@@ -459,15 +452,6 @@ fd_read_body (const char *downloaded_filename, int fd, FILE *out, wgint toread, 
             {
               int err;
               int towrite;
-
-              /* Write original data to WARC file */
-              write_res = write_data (NULL, out2, dlbuf, ret, NULL, NULL);
-              if (write_res < 0)
-                {
-                  ret = write_res;
-                  goto out;
-                }
-
               gzstream.avail_in = ret;
               gzstream.next_in = (unsigned char *) dlbuf;
 
@@ -498,11 +482,11 @@ fd_read_body (const char *downloaded_filename, int fd, FILE *out, wgint toread, 
                     }
 
                   towrite = gzbufsize - gzstream.avail_out;
-                  write_res = write_data (out, NULL, gzbuf, towrite, &skip,
+                  write_res = write_data (out, out2, gzbuf, towrite, &skip,
                                           &sum_written);
                   if (write_res < 0)
                     {
-                      ret = write_res;
+                      ret = (write_res == -3) ? -3 : -2;
                       goto out;
                     }
                 }
@@ -515,7 +499,7 @@ fd_read_body (const char *downloaded_filename, int fd, FILE *out, wgint toread, 
                                       &sum_written);
               if (write_res < 0)
                 {
-                  ret = write_res;
+                  ret = (write_res == -3) ? -3 : -2;
                   goto out;
                 }
             }

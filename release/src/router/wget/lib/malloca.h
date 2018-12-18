@@ -56,10 +56,8 @@ extern "C" {
    the function returns.  Upon failure, it returns NULL.  */
 #if HAVE_ALLOCA
 # define malloca(N) \
-  ((N) < 4032 - (2 * sa_alignment_max - 1)                                   \
-   ? (void *) (((uintptr_t) (char *) alloca ((N) + 2 * sa_alignment_max - 1) \
-                + (2 * sa_alignment_max - 1))                                \
-               & ~(uintptr_t)(2 * sa_alignment_max - 1))                     \
+  ((N) < 4032 - sa_increment                                        \
+   ? (void *) ((char *) alloca ((N) + sa_increment) + sa_increment) \
    : mmalloca (N))
 #else
 # define malloca(N) \
@@ -121,7 +119,10 @@ enum
                       | (sa_alignment_longlong - 1)
 #endif
                       | (sa_alignment_longdouble - 1)
-                     ) + 1
+                     ) + 1,
+/* The increment that guarantees room for a magic word must be >= sizeof (int)
+   and a multiple of sa_alignment_max.  */
+  sa_increment = ((sizeof (int) + sa_alignment_max - 1) / sa_alignment_max) * sa_alignment_max
 };
 
 #endif /* _MALLOCA_H */

@@ -312,7 +312,7 @@ cleanup:
 
 /* This is the corresponding Windows implementation of the
    fork_to_background() function in utils.c.  */
-bool
+void
 fork_to_background (void)
 {
   int rv;
@@ -332,7 +332,6 @@ fork_to_background (void)
       abort ();
     }
   /* If we get here, we're the child.  */
-  return false;
 }
 
 static BOOL WINAPI

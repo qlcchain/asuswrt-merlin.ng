@@ -39,7 +39,8 @@
    GNU Emacs, which arranges for this in some other way and which
    defines WIN32_LEAN_AND_MEAN itself.  */
 
-#if defined _WIN32 && ! defined __CYGWIN__ && ! defined EMACS_CONFIGURATION
+#if ((defined _WIN32 || defined __WIN32__) \
+     && ! defined __CYGWIN__ && ! defined EMACS_CONFIGURATION)
 # define USE_SETFILETIME
 # define WIN32_LEAN_AND_MEAN
 # include <windows.h>
@@ -91,11 +92,11 @@ validate_timespec (struct timespec timespec[2])
   if ((timespec[0].tv_nsec != UTIME_NOW
        && timespec[0].tv_nsec != UTIME_OMIT
        && ! (0 <= timespec[0].tv_nsec
-             && timespec[0].tv_nsec < TIMESPEC_HZ))
+             && timespec[0].tv_nsec < TIMESPEC_RESOLUTION))
       || (timespec[1].tv_nsec != UTIME_NOW
           && timespec[1].tv_nsec != UTIME_OMIT
           && ! (0 <= timespec[1].tv_nsec
-                && timespec[1].tv_nsec < TIMESPEC_HZ)))
+                && timespec[1].tv_nsec < TIMESPEC_RESOLUTION)))
     {
       errno = EINVAL;
       return -1;

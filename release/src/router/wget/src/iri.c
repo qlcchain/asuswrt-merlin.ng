@@ -95,9 +95,9 @@ find_locale (void)
 	const char *encoding = nl_langinfo(CODESET);
 
 	if (!encoding || !*encoding)
-		return xstrdup("ASCII");
+		return "ASCII";
 
-   return xstrdup(encoding);
+   return encoding;
 }
 
 /* Basic check of an encoding name. */

@@ -25,8 +25,7 @@ AC_DEFUN([gl_EXTERN_INLINE],
    if isdigit is mistakenly implemented via a static inline function,
    a program containing an extern inline function that calls isdigit
    may not work since the C standard prohibits extern inline functions
-   from calling static functions (ISO C 99 section 6.7.4.(3).
-   This bug is known to occur on:
+   from calling static functions.  This bug is known to occur on:
 
      OS X 10.8 and earlier; see:
      https://lists.gnu.org/r/bug-gnulib/2012-12/msg00023.html
@@ -39,18 +38,7 @@ AC_DEFUN([gl_EXTERN_INLINE],
 
    OS X 10.9 has a macro __header_inline indicating the bug is fixed for C and
    for clang but remains for g++; see <https://trac.macports.org/ticket/41033>.
-   Assume DragonFly and FreeBSD will be similar.
-
-   GCC 4.3 and above with -std=c99 or -std=gnu99 implements ISO C99
-   inline semantics, unless -fgnu89-inline is used.  It defines a macro
-   __GNUC_STDC_INLINE__ to indicate this situation or a macro
-   __GNUC_GNU_INLINE__ to indicate the opposite situation.
-   GCC 4.2 with -std=c99 or -std=gnu99 implements the GNU C inline
-   semantics but warns, unless -fgnu89-inline is used:
-     warning: C99 inline functions are not supported; using GNU89
-     warning: to disable this warning use -fgnu89-inline or the gnu_inline function attribute
-   It defines a macro __GNUC_GNU_INLINE__ to indicate this situation.
- */
+   Assume DragonFly and FreeBSD will be similar.  */
 #if (((defined __APPLE__ && defined __MACH__) \
       || defined __DragonFly__ || defined __FreeBSD__) \
      && (defined __header_inline \

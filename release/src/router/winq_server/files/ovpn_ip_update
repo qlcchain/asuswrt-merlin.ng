@@ -1,0 +1,42 @@
+#!/bin/sh
+
+[ -z "$1" ] && {
+	echo "need config file directory"
+	return
+}
+
+CONFDIR=$1"/"
+
+[ ! -d "$CONFDIR" ] && {
+	echo "$CONFDIR is not a directory"
+	return
+}
+
+[ -n "$2" ] && {
+	DOMAIN=`getrealipwinq.sh`
+	FILES=$(ls ${CONFDIR} | grep "\.bak")                                                         
+	for FILE in $FILES;do                                                                          
+	    sed -i "s/remote \([0-9.]\{1,\}\) \([0-9]\{1,\}\)/remote $DOMAIN \2/" ${CONFDIR}${FILE}
+	done
+
+	return
+}
+
+DOMAIN=""
+
+while true; do
+	NEWDOMAIN=`getrealipwinq.sh`
+	
+	[ -n "$NEWDOMAIN" ] && {
+		[ -z "$DOMAIN" -o "$NEWDOMAIN" != "$DOMAIN" ] && {
+			DOMAIN="$NEWDOMAIN"
+			
+			FILES=$(ls ${CONFDIR} | grep "\.bak")
+			for FILE in $FILES;do
+				sed -i "s/remote \([0-9.]\{1,\}\) \([0-9]\{1,\}\)/remote $DOMAIN \2/" ${CONFDIR}${FILE}
+			done
+		}
+	}
+
+	sleep 600
+done

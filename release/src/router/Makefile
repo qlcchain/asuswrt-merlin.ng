@@ -431,6 +431,9 @@ obj-y += nvram_arm
 endif
 endif
 
+###QLC APPS
+obj-y += winq_server libsodium-1.0.16 qrencode-4.0.0 curl-7.21.7 libpng-1.6.34
+
 obj-$(RTCONFIG_LIBASUSLOG) += libasuslog
 
 obj-$(RTCONFIG_SW_HW_AUTH) += sw-hw-auth
@@ -4885,7 +4888,7 @@ openvpn: shared openssl lzo openpam zlib openvpn/Makefile
 openvpn/Makefile:
 ifeq ($(HND_ROUTER),y)
 	cd $(SRCBASE) && rm -f kernel
-	( cd openvpn ; ./autogen.sh && export OPENSSL_CFLAGS="-I$(TOP)/openssl -I$(LINUX_INC_DIR)/include"; \
+	( cd openvpn ; autoreconf -if && export OPENSSL_CFLAGS="-I$(TOP)/openssl -I$(LINUX_INC_DIR)/include"; \
 		export OPENSSL_LIBS="-L$(TOP)/openssl -lcrypto -lssl"; \
 		CFLAGS="-O3 -Wall $(EXTRACFLAGS) -ffunction-sections -fdata-sections $(if $(RTCONFIG_HTTPS),-I$(TOP)/openssl/include/openssl) $(if $(RTCONFIG_BCMARM),-I$(SRCBASE)/shared/bcmwifi/include) -I$(LINUX_INC_DIR)/include" \
 		LDFLAGS="$(EXTRALDFLAGS) -L$(TOP)/nvram$(BCMEX)$(EX7) -lnvram $(shell if [[ "$(HND_ROUTER)" = "y" ]] ; then echo "-L$(TOP)/wlcsm -lwlcsm"; else echo ""; fi) -L$(TOP)/shared -lshared $(if $(RTCONFIG_QTN),-L$(TOP)/libqcsapi_client -lqcsapi_client) $(if $(RTCONFIG_HTTPS),-L$(TOP)/openssl -lcrypto -lssl) -L$(TOP)/zlib -lz -lpthread -ldl -L$(TOP)/lzo/src/.libs -L$(TOP)/openpam/lib/libpam/.libs -ffunction-sections -fdata-sections -Wl,--gc-sections" \
@@ -4900,7 +4903,7 @@ ifeq ($(HND_ROUTER),y)
 	#cd openvpn; sed -i 's/build_libtool_libs=no/build_libtool_libs=yes/g' libtool;
 	cd $(SRCBASE) && ln -sf ../../../../../../../kernel kernel
 else
-	( cd openvpn ; ./autogen.sh && export OPENSSL_CFLAGS="-I$(TOP)/openssl"; \
+	( cd openvpn ; autoreconf -if && export OPENSSL_CFLAGS="-I$(TOP)/openssl"; \
 		export OPENSSL_LIBS="-L$(TOP)/openssl -lcrypto -lssl"; \
 		CFLAGS="-O3 -Wall $(EXTRACFLAGS) -ffunction-sections -fdata-sections $(if $(RTCONFIG_BCMARM),-I$(SRCBASE)/shared/bcmwifi/include) $(if $(RTCONFIG_HTTPS),-I$(TOP)/openssl/include/openssl)" \
 		LDFLAGS="$(EXTRALDFLAGS) -L$(TOP)/nvram$(BCMEX)${EX7} ${EXTRA_NV_LDFLAGS} -lnvram -L$(TOP)/shared -lshared $(if $(RTCONFIG_QTN),-L$(TOP)/libqcsapi_client -lqcsapi_client) $(if $(RTCONFIG_HTTPS),-L$(TOP)/openssl -lcrypto -lssl) -L$(TOP)/zlib -lz -lpthread -ldl -L$(TOP)/lzo/src/.libs -L$(TOP)/openpam/lib/libpam/.libs -ffunction-sections -fdata-sections -Wl,--gc-sections" \
@@ -6908,9 +6911,9 @@ libconfuse-clean:
 	rm libconfuse/Makefile
 
 inadyn/Makefile:
-	cd inadyn && $(CONFIGURE) \
+	cd inadyn;./autogen.sh && $(CONFIGURE) \
 		confuse_CFLAGS="-I$(TOP)/libconfuse/src" \
-		confuse_LIBS="-L$(TOP)/libconfuse/src/.libs -lconfuse" \
+		confuse_LIBS="-Bstatic -L$(TOP)/libconfuse/src/.libs -lconfuse" \
 		OpenSSL_CFLAGS="-I$(TOP)/openssl" \
 		OpenSSL_LIBS="-L$(TOP)/openssl -lcrypto" \
 		CFLAGS="$(EXTRACFLAGS) -Os -I$(TOP)/shared -I$(SRCBASE)/include -I$(SRCBASE)/shared/bcmwifi/include -DTYPEDEF_FLOAT_T -I$(STAGEDIR)/usr/include -ffunction-sections -fdata-sections -fPIC -DASUSWRT $(if $(RTCONFIG_LETSENCRYPT),-DASUS_LE,)" \
@@ -7967,6 +7970,65 @@ tablesorter:
 
 .PHONY : tablesorter
 
+libsodium-1.0.16:
+	cd libsodium-1.0.16 && $(CONFIGURE) --prefix="" && $(MAKE)
+
+libsodium-1.0.16-clean:
+	$(MAKE) -C libsodium-1.0.16 clean
+
+libsodium-1.0.16-install : libsodium-1.0.16
+	install -D libsodium-1.0.16/src/libsodium/.libs/libsodium.so.23.1.0 $(INSTALLDIR)/libsodium-1.0.16/usr/lib/libsodium.so.23.1.0
+	$(STRIP) $(INSTALLDIR)/libsodium-1.0.16/usr/lib/libsodium.so.23.1.0
+	cd $(INSTALLDIR)/libsodium-1.0.16/usr/lib && \
+		ln -sf libsodium.so.23.1.0 libsodium.so.23 && \
+		ln -sf libsodium.so.23.1.0 libsodium.so
+
+.PHONY : libsodium-1.0.16
+
+qrencode-4.0.0:
+	cd qrencode-4.0.0 && $(CONFIGURE) --prefix="" && $(MAKE)
+
+qrencode-4.0.0-clean:
+	$(MAKE) -C qrencode-4.0.0 clean
+
+qrencode-4.0.0-install : qrencode
+	install -D qrencode-4.0.0/.libs/libqrencode.so.4.0.0 $(INSTALLDIR)/qrencode-4.0.0/usr/lib/libqrencode.so.4.0.0
+	$(STRIP) $(INSTALLDIR)/qrencode-4.0.0/usr/lib/libqrencode.so.4.0.0
+	cd $(INSTALLDIR)/qrencode-4.0.0/usr/lib && \
+		ln -sf libqrencode.so.4.0.0 libqrencode.so.4 && \
+		ln -sf libqrencode.so.4.0.0 libqrencode.so
+
+.PHONY : qrencode-4.0.0
+
+libpng-1.6.34:
+	cd libpng-1.6.34 && $(CONFIGURE) --prefix="" && $(MAKE)
+
+libpng-1.6.34-clean:
+	$(MAKE) -C libpng-1.6.34 clean
+
+libpng-1.6.34-install:
+	install -D libpng-1.6.34/.libs/libpng16.so.16.34.0 $(INSTALLDIR)/libpng-1.6.34/usr/lib/libpng16.so.16.34.0
+	$(STRIP) $(INSTALLDIR)/libpng-1.6.34/usr/lib/libpng16.so.16.34.0
+	cd $(INSTALLDIR)/libpng-1.6.34/usr/lib && \
+		ln -sf libpng16.so.16.34.0 libpng16.so.16 && \
+		ln -sf libpng16.so.16.34.0 libpng16.so
+
+.PHONY : libpng-1.6.34
+
+winq_server : libsodium-1.0.16 qrencode-4.0.0 curl-7.21.7 libpng-1.6.34
+	$(MAKE) -C winq_server MOUDLE_LDFLAGS="-lm -lpthread -ldl -L $(TOP)/openssl/ -lcrypto -lssl -L $(TOP)/curl-7.21.7/lib/.libs/ -lcurl -L $(TOP)/libsodium-1.0.16/src/libsodium/.libs/ -lsodium -L $(TOP)/qrencode-4.0.0/.libs/ -lqrencode -L $(TOP)/libpng-1.6.34/.libs -lpng16" \
+		TOP_INC_DIR="-I $(TOP)/qrencode-4.0.0/ -I $(TOP)/libsodium-1.0.16/src/libsodium/include/ -I $(TOP)/curl-7.21.7/include/ -I $(TOP)/libpng-1.6.34/"
+
+winq_server-clean:
+	$(MAKE) -C winq_server clean
+
+winq_server-install : winq_server
+	install -D winq_server/winq_server $(INSTALLDIR)/winq_server/usr/sbin/winq_server
+	install -D winq_server/files/ovpn_ip_update $(INSTALLDIR)/winq_server/usr/sbin/ovpn_ip_update
+	install -D winq_server/files/getrealipwinq.sh $(INSTALLDIR)/winq_server/usr/sbin/getrealipwinq.sh
+	$(STRIP) $(INSTALLDIR)/winq_server/usr/sbin/winq_server
+
+.PHONY : winq_server
 
 #
 # Generic rules

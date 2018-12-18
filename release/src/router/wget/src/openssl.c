@@ -43,9 +43,7 @@ as that of the covered work.  */
 #include <openssl/bio.h>
 #if OPENSSL_VERSION_NUMBER >= 0x00907000
 #include <openssl/conf.h>
-#ifndef OPENSSL_NO_ENGINE
 #include <openssl/engine.h>
-#endif
 #endif
 
 #include "utils.h"
@@ -69,6 +67,10 @@ init_prng (void)
   char namebuf[256];
   const char *random_file;
 
+  if (RAND_status ())
+    /* The PRNG has been seeded; no further action is necessary. */
+    return;
+
   /* Seed from a file specified by the user.  This will be the file
      specified with --random-file, $RANDFILE, if set, or ~/.rnd, if it
      exists.  */
@@ -86,11 +88,17 @@ init_prng (void)
        curl) from random file. */
     RAND_load_file (random_file, 16384);
 
+  if (RAND_status ())
+    return;
+
 #ifdef HAVE_RAND_EGD
   /* Get random data from EGD if opt.egd_file was used.  */
   if (opt.egd_file && *opt.egd_file)
     RAND_egd (opt.egd_file);
 #endif
+
+  if (RAND_status ())
+    return;
 
 #ifdef WINDOWS
   /* Under Windows, we can try to seed the PRNG using screen content.
@@ -165,7 +173,6 @@ ssl_init (void)
 {
   SSL_METHOD const *meth;
   long ssl_options = 0;
-  char *ciphers_string = NULL;
 #if !defined(LIBRESSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x10100000L)
   int ssl_proto_version = 0;
 #endif
@@ -195,9 +202,7 @@ ssl_init (void)
 
 #if OPENSSL_VERSION_NUMBER >= 0x00907000
   OPENSSL_load_builtin_modules();
-#ifndef OPENSSL_NO_ENGINE
   ENGINE_load_builtin_engines();
-#endif
   CONF_modules_load_file(NULL, NULL,
       CONF_MFLAGS_DEFAULT_SECTION|CONF_MFLAGS_IGNORE_MISSING_FILE);
 #endif
@@ -258,16 +263,6 @@ ssl_init (void)
       meth = TLSv1_2_client_method ();
 #endif
       break;
-
-    case secure_protocol_tlsv1_3:
-#if !defined(LIBRESSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x10100000L) && defined TLS1_3_VERSION
-      meth = TLS_client_method();
-      ssl_proto_version = TLS1_3_VERSION;
-#else
-      logprintf (LOG_NOTQUIET, _("Your OpenSSL version is too old to support TLS 1.3\n"));
-      goto error;
-#endif
-      break;
 #else
     case secure_protocol_tlsv1_1:
       logprintf (LOG_NOTQUIET, _("Your OpenSSL version is too old to support TLSv1.1\n"));
@@ -276,7 +271,6 @@ ssl_init (void)
     case secure_protocol_tlsv1_2:
       logprintf (LOG_NOTQUIET, _("Your OpenSSL version is too old to support TLSv1.2\n"));
       goto error;
-
 #endif
 
     default:
@@ -300,29 +294,10 @@ ssl_init (void)
 #endif
 
   /* OpenSSL ciphers: https://www.openssl.org/docs/apps/ciphers.html
-   *
-   * Rules:
-   *  1. --ciphers overrides everything
-   *  2. We allow RSA key exchange by default (secure_protocol_auto)
-   *  3. We disallow RSA key exchange if PFS was requested (secure_protocol_pfs)
+   * Since we want a good protection, we also use HIGH (that excludes MD4 ciphers and some more)
    */
-  if (!opt.tls_ciphers_string)
-    {
-      if (opt.secure_protocol == secure_protocol_auto)
-	      ciphers_string = "HIGH:!aNULL:!RC4:!MD5:!SRP:!PSK";
-      else if (opt.secure_protocol == secure_protocol_pfs)
-	      ciphers_string = "HIGH:!aNULL:!RC4:!MD5:!SRP:!PSK:!kRSA";
-    }
-  else
-    {
-      ciphers_string = opt.tls_ciphers_string;
-    }
-
-  if (ciphers_string && !SSL_CTX_set_cipher_list(ssl_ctx, ciphers_string))
-    {
-      logprintf(LOG_NOTQUIET, _("OpenSSL: Invalid cipher list: %s\n"), ciphers_string);
-      goto error;
-    }
+  if (opt.secure_protocol == secure_protocol_pfs)
+    SSL_CTX_set_cipher_list (ssl_ctx, "HIGH:MEDIUM:!RC4:!SRP:!PSK:!RSA:!aNULL@STRENGTH");
 
   SSL_CTX_set_default_verify_paths (ssl_ctx);
   SSL_CTX_load_verify_locations (ssl_ctx, opt.ca_cert, opt.ca_directory);
@@ -631,15 +606,6 @@ ssl_connect_wget (int fd, const char *hostname, int *continue_session)
   if (!SSL_set_fd (conn, FD_TO_SOCKET (fd)))
     goto error;
   SSL_set_connect_state (conn);
-
-  /* Re-seed the PRNG before the SSL handshake */
-  init_prng ();
-  if (RAND_status () != 1)
-    {
-      logprintf(LOG_NOTQUIET,
-		_("WARNING: Could not seed PRNG. Consider using --random-file.\n"));
-      goto error;
-    }
 
   scwt_ctx.ssl = conn;
   if (run_with_timeout(opt.read_timeout, ssl_connect_with_timeout_callback,

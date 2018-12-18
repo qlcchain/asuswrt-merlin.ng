@@ -23,8 +23,7 @@ struct __spawn_action
   {
     spawn_do_close,
     spawn_do_dup2,
-    spawn_do_open,
-    spawn_do_chdir
+    spawn_do_open
   } tag;
 
   union
@@ -45,10 +44,6 @@ struct __spawn_action
       int oflag;
       mode_t mode;
     } open_action;
-    struct
-    {
-      const char *path;
-    } chdir_action;
   } action;
 };
 

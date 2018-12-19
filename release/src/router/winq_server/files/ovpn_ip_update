@@ -6,6 +6,7 @@
 }
 
 CONFDIR=$1"/"
+REALIP="/jffs/winq_server/realip"
 
 [ ! -d "$CONFDIR" ] && {
 	echo "$CONFDIR is not a directory"
@@ -14,10 +15,19 @@ CONFDIR=$1"/"
 
 [ -n "$2" ] && {
 	DOMAIN=`getrealipwinq.sh`
-	FILES=$(ls ${CONFDIR} | grep "\.bak")                                                         
-	for FILE in $FILES;do                                                                          
-	    sed -i "s/remote \([0-9.]\{1,\}\) \([0-9]\{1,\}\)/remote $DOMAIN \2/" ${CONFDIR}${FILE}
-	done
+
+	if [ -z "$DOMAIN" ];then
+		DOMAIN=$(cat $REALIP)
+	else
+		echo $DOMAIN > $REALIP
+	fi
+
+	[ -n "$DOMAIN" ] && {
+		FILES=$(ls ${CONFDIR} | grep "\.bak")                                                         
+		for FILE in $FILES;do                                                                          
+		    sed -i "s/remote \([0-9.]\{1,\}\) \([0-9]\{1,\}\)/remote $DOMAIN \2/" ${CONFDIR}${FILE}
+		done
+	}
 
 	return
 }
@@ -27,6 +37,10 @@ DOMAIN=""
 while true; do
 	NEWDOMAIN=`getrealipwinq.sh`
 	
+	[ -z "$NEWDOMAIN" ] && {
+		NEWDOMAIN=`cat /jffs/winq_server/realip`
+	}
+
 	[ -n "$NEWDOMAIN" ] && {
 		[ -z "$DOMAIN" -o "$NEWDOMAIN" != "$DOMAIN" ] && {
 			DOMAIN="$NEWDOMAIN"

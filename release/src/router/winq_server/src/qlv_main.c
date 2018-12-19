@@ -798,10 +798,16 @@ int nvram_get_int(char *name, int *value)
 void *openvpn_monitor_thread(void *args)
 {
 	pthread_t tox_tid;
+	char vpns1_md5_last[33] = {0};
+	char vpns2_md5_last[33] = {0};
+	char vpns1_md5_now[33] = {0};
+	char vpns2_md5_now[33] = {0};
+	char changed = 0;
 	
 	while (1) {
 		nvram_get_int("vpn_server1_state", &g_vpns1_enable);
 		nvram_get_int("vpn_server2_state", &g_vpns2_enable);
+		changed = 0;
 
 		if (!g_vpns1_enable && !g_vpns2_enable) {
 			DEBUG_PRINT(DEBUG_LEVEL_ERROR, "all servers closed");
@@ -824,20 +830,33 @@ void *openvpn_monitor_thread(void *args)
 		}
 
 		if (g_vpns1_enable) {
-			system("cp /etc/openvpn/server1/client.ovpn /jffs/winq_server/client1.bak");
+			md5_hash_file("/etc/openvpn/server1/client.ovpn", vpns1_md5_now);
+			if (memcmp(vpns1_md5_now, vpns1_md5_last, 32)) {
+				memcpy(vpns1_md5_last, vpns1_md5_now, 32);
+				system("cp /etc/openvpn/server1/client.ovpn /jffs/winq_server/client1.bak");
+				changed = 1;
+			}
 		} else {
 			system("rm -f /jffs/winq_server/client1.ovpn");
 		}
 
 		if (g_vpns2_enable) {
-			system("cp /etc/openvpn/server2/client.ovpn /jffs/winq_server/client2.bak");
+			md5_hash_file("/etc/openvpn/server2/client.ovpn", vpns2_md5_now);
+			if (memcmp(vpns2_md5_now, vpns2_md5_last, 32)) {
+				memcpy(vpns2_md5_last, vpns2_md5_now, 32);
+				system("cp /etc/openvpn/server2/client.ovpn /jffs/winq_server/client2.bak");
+				changed = 1;
+			}
 		} else {
 			system("rm -f /jffs/winq_server/client2.ovpn");
 		}
 
-		system("ovpn_ip_update /jffs/winq_server 1");
-		system("mv /jffs/winq_server/client1.bak /jffs/winq_server/client1.ovpn");
-		system("mv /jffs/winq_server/client2.bak /jffs/winq_server/client2.ovpn");
+		if (changed) {
+			system("ovpn_ip_update /jffs/winq_server 1");
+			system("mv /jffs/winq_server/client1.bak /jffs/winq_server/client1.ovpn");
+			system("mv /jffs/winq_server/client2.bak /jffs/winq_server/client2.ovpn");
+		}
+		
 		sleep(60);
 	}
 }

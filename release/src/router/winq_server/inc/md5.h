@@ -45,5 +45,6 @@ void MD5Transform(unsigned int state[4],unsigned char block[64]);
 void MD5Encode(unsigned char *output,unsigned int *input,unsigned int len);
 void MD5Decode(unsigned int *output,unsigned char *input,unsigned int len);
 char *md5_hash(unsigned char *str, unsigned int str_len);
+char *md5_hash_file(char *file, char *md5);
 
 #endif

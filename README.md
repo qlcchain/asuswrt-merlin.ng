@@ -1,4 +1,4 @@
-asuswrt-merlin New Gen (version 382.xx and higher)
+Asuswrt-merlin New Gen 
 ==================================================
 
 **Asuswrt-Merlin is an enhanced version of Asuswrt, the firmware used by Asus's modern routers.**
@@ -16,26 +16,32 @@ https://github.com/RMerl/asuswrt-merlin/wiki/Supported-Devices
 
 
 
-##About asuswrt-merlin WinQ Version
+## About asuswrt-merlin WinQ Version
 
 **We forked this branch from official [asuswrt-merlin](https://github.com/RMerl/asuswrt-merlin.ng) and integrated with WinQ Server service.**
 
 The WinQ server is used to work together with WinQ App to register the VPN server as a digital asset on QLC Chain then get reward from the network sharing. As WinQ server maintains the resident of the asset, user-side WinQ App can directly connect to the WinQ server to use the asset, then the server-side WinQ App doesn't need to keep active all the time any more. As a result, both the stability of VPN asset and power saving are extremely improved.
 
+
+
 ## Building
 
 Please refer to [Building](./Building.md) doc for reference.
 
-##Supported List
+
+
+## Supported List
 
 https://github.com/RMerl/asuswrt-merlin/wiki/Supported-Devices
 
 **We has build and tested on RT-AC66U_B1.**
 
+
+
 ## User Guide of Enable WinQ Server
 
-[User Guide](./release/src/router/winq_server/files//UserGuide.md)
+Please check [User Guide](./release/src/router/winq_server/files//UserGuide.md) for detail info
 
-Screen Short
+Here is a Screen Shot when configuration is completed.
 
 ![WinQServer2](./WinQServer2.png)

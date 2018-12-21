@@ -34,9 +34,12 @@ Please refer to [Building](./Building.md) doc for reference.
 
 https://github.com/RMerl/asuswrt-merlin/wiki/Supported-Devices
 
-**We has build and tested on RT-AC66U_B1.**
+Device list we built:
+ASUS RT-AC66U_B1(Share the same image of RT-AC68U)
+ASUS RT-AC68U
+ASUS RT-AC86U
 
-
+**Tested on ASUS RT-AC66U_B1**
 
 ## User Guide of Enable WinQ Server
 

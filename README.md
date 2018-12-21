@@ -35,8 +35,11 @@ Please refer to [Building](./Building.md) doc for reference.
 https://github.com/RMerl/asuswrt-merlin/wiki/Supported-Devices
 
 Device list we built:
+
 ASUS RT-AC66U_B1(Share the same image of RT-AC68U)
+
 ASUS RT-AC68U
+
 ASUS RT-AC86U
 
 **Tested on ASUS RT-AC66U_B1**

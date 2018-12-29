@@ -1049,7 +1049,7 @@ function show_winq_qrcode() {
 	var vpns1 = '<% nvram_get("vpn_server1_state"); %>';
 	var vpns2 = '<% nvram_get("vpn_server2_state"); %>';
 	
-	if (vpns1 == "1" || vpns2 == "1") {
+	if (vpns1 || vpns2) {
 		document.getElementById("qrcode").style.display = "block";
 		var vpnasset;
 		

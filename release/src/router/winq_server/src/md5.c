@@ -179,3 +179,36 @@ char *md5_hash(unsigned char *str, unsigned int str_len)
 			dst[13],dst[14],dst[15]);
 	return final;
 }
+
+char *md5_hash_file(char *file, char *md5)
+{
+	MD5_CTX context = {{0},{0},{0}};
+	unsigned char dst[16] = {0};
+	FILE *pf = NULL;
+	unsigned char buff[4096] = {0};
+	int ret = 0;
+	
+	pf = fopen(file, "rb");
+	if (pf) {
+		MD5Init(&context);
+
+		while ((ret = fread(buff, 1, sizeof(buff), pf)) > 0) {
+			MD5Update(&context, buff, ret);
+		}
+
+		MD5Final(&context, dst);
+
+		snprintf(md5, 33, "%02x%02x%02x%02x%02x%02x%02x"
+			"%02x%02x%02x%02x%02x%02x%02x"
+			"%02x%02x", dst[0],dst[1],dst[2],
+			dst[3],dst[4],dst[5],dst[6],dst[7],
+			dst[8],dst[9],dst[10],dst[11],dst[12],
+			dst[13],dst[14],dst[15]);
+		
+		fclose(pf);
+		return md5;
+	} else {
+		return NULL;
+	}
+}
+

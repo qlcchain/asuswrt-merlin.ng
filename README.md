@@ -20,13 +20,13 @@ https://github.com/RMerl/asuswrt-merlin/wiki/Supported-Devices
 
 **We forked this branch from official [asuswrt-merlin](https://github.com/RMerl/asuswrt-merlin.ng) and integrated with WinQ Server service.**
 
-The WinQ server is used to work together with WinQ App to register the VPN server as a digital asset on QLC Chain then get reward from the network sharing. As WinQ server maintains the resident of the asset, user-side WinQ App can directly connect to the WinQ server to use the asset, then the server-side WinQ App doesn't need to keep active all the time any more. As a result, both the stability of VPN asset and power saving are extremely improved.
+The WinQ server is used to work together with WinQ App. Owner can register the VPN server as a digital asset and get rewards from the network sharing on WinQ platform. As WinQ server maintains the resident of the asset, the user-side WinQ App connects to the WinQ server to access VPN asset directly. As a result, both the stability of VPN asset and power saving are improved significantly.
 
 
 
 ## Building
 
-Please refer to [Building](./Building.md) doc for reference.
+Please refer to **[Building](./Building.md)** doc for reference.
 
 
 

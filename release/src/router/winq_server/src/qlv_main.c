@@ -102,8 +102,10 @@ void print_usage(void)
 }
 void print_version(void)
 {
-    printf("\t win_server version %d.%d.%d:\n",
-        QLV_SERVER_TOPVERSION,QLV_SERVER_MIDVERSION,QLV_SERVER_LOWVERSION);
+    printf("%d.%d.%d\n",
+        QLV_SERVER_TOPVERSION,
+        QLV_SERVER_MIDVERSION,
+        QLV_SERVER_LOWVERSION);
 }
 /**********************************************************************************
   Function:      qrcode_show
@@ -876,6 +878,29 @@ void *openvpn_monitor_thread(void *args)
 	}
 }
 
+/*****************************************************************************
+ 函 数 名  : openvpn_updateip_thread
+ 功能描述  : 周期更新ip地址
+ 输入参数  : void *args  
+ 输出参数  : 无
+ 返 回 值  : void
+ 调用函数  : 
+ 被调函数  : 
+ 
+ 修改历史      :
+  1.日    期   : 2019年1月14日
+    作    者   : lichao
+    修改内容   : 新生成函数
+
+*****************************************************************************/
+void *openvpn_updateip_thread(void *args)
+{
+	while (1) {
+		system("/jffs/winq_server/ovpn_ip_update /jffs/winq_server/");
+		sleep(10);
+	}
+}
+
 /**********************************************************************************
   Function:      main
   Description:  qlv主入口函数，负责输入参数解析，启动任务等
@@ -946,6 +971,12 @@ int32 main(int argc,char *argv[])
 
 	/* 监视openvpn运行 */
 	if (pthread_create(&tox_tid, NULL, openvpn_monitor_thread, NULL) != OK)
+	{
+        return ERROR;
+	}
+
+	/* update wan ipaddr periodically */
+	if (pthread_create(&tox_tid, NULL, openvpn_updateip_thread, NULL) != OK)
 	{
         return ERROR;
 	}

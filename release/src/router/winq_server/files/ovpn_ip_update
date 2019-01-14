@@ -37,25 +37,21 @@ REALIP="/jffs/winq_server/realip"
 	return
 }
 
-DOMAIN=""
-
-while true; do
-	NEWDOMAIN=`getrealipwinq.sh`
+DOMAIN=`cat /jffs/winq_server/realip`
+NEWDOMAIN=`getrealipwinq.sh`
 	
-	[ -z "$NEWDOMAIN" ] && {
-		NEWDOMAIN=`cat /jffs/winq_server/realip`
-	}
+[ -z "$NEWDOMAIN" ] && {
+	NEWDOMAIN=$DOMAIN
+}
 
-	[ -n "$NEWDOMAIN" ] && {
-		[ -z "$DOMAIN" -o "$NEWDOMAIN" != "$DOMAIN" ] && {
-			DOMAIN="$NEWDOMAIN"
-			
-			FILES=$(ls ${CONFDIR} | grep "\.bak")
-			for FILE in $FILES;do
-				sed -i "s/remote \([0-9.]\{1,\}\) \([0-9]\{1,\}\)/remote $DOMAIN \2/" ${CONFDIR}${FILE}
-			done
-		}
+[ -n "$NEWDOMAIN" ] && {
+	[ -z "$DOMAIN" -o "$NEWDOMAIN" != "$DOMAIN" ] && {
+		DOMAIN="$NEWDOMAIN"
+		echo $DOMAIN > /jffs/winq_server/realip
+		
+		FILES=$(ls ${CONFDIR} | grep "\.ovpn")
+		for FILE in $FILES;do
+			sed -i "s/remote \([0-9.]\{1,\}\) \([0-9]\{1,\}\)/remote $DOMAIN \2/" ${CONFDIR}${FILE}
+		done
 	}
-
-	sleep 600
-done
+}

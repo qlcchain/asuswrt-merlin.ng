@@ -21,10 +21,6 @@ ubuntu-18.04.1-desktop-amd64.iso
 ### Clone the toolchains
 `git clone https://github.com/RMerl/am-toolchains`
 
-or
-
-`git clone https://github.com/qlcchain/asuswrt-merlin.ng` for zlib missing when building HND.
-
 ### Fix the toolchain symlinks
 `sudo mkdir -p /opt ; sudo rm -rf /opt/toolchains ; sudo ln -s ~/am-toolchains/brcm-arm-hnd /opt/toolchains ; sudo rm -f /opt/brcm-arm ; sudo ln -s ~/am-toolchains/brcm-arm-sdk/hndtools-arm-linux-2.6.36-uclibc-4.5.3 /opt/brcm-arm ; sudo rm -f /opt/brcm ; sudo ln -s ~/am-toolchains/brcm-mips-sdk/tools/brcm /opt/brcm`
 

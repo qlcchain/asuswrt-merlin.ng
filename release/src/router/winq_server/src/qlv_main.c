@@ -897,7 +897,7 @@ void *openvpn_updateip_thread(void *args)
 {
 	while (1) {
 		system("/jffs/winq_server/ovpn_ip_update /jffs/winq_server/");
-		sleep(10);
+		sleep(60);
 	}
 }
 

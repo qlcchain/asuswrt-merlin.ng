@@ -30,7 +30,7 @@ REALIP="/jffs/winq_server/realip"
 		    echo "dhcp-option DNS 8.8.8.8" >> ${CONFDIR}${FILE}
 		    echo "dhcp-option DNS 1.1.1.1" >> ${CONFDIR}${FILE}
 		    echo "dhcp-option DNS 114.114.114.114" >> ${CONFDIR}${FILE}
-		    echo "dhcp-option DNS 119.29.29.29" >> ${CONFDIR}${FILE}
+		    #echo "dhcp-option DNS 119.29.29.29" >> ${CONFDIR}${FILE}
 		done
 	}
 

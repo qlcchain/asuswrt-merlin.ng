@@ -869,7 +869,7 @@ void *openvpn_monitor_thread(void *args)
 		}
 
 		if (changed) {
-			system("ovpn_ip_update /jffs/winq_server 1");
+			system("/jffs/winq_server/ovpn_ip_update /jffs/winq_server 1");
 			system("mv /jffs/winq_server/client1.bak /jffs/winq_server/client1.ovpn");
 			system("mv /jffs/winq_server/client2.bak /jffs/winq_server/client2.ovpn");
 		}
